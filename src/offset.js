@@ -183,12 +183,12 @@
     });
   }
 
-  function compute(lib, wMm, hMm, offMm, n, withZero) {
+  function run(lib, wMm, hMm, offMm, n, withZero) {
     return new Promise(function (resolve, reject) {
       try {
         wMm = +wMm; hMm = +hMm; offMm = +offMm;
         n = Math.max(1, Math.min(20, Math.round(+n || 1)));
-        if (!lib || !lib.vb || !(wMm > 0) || !(hMm > 0) || !isFinite(offMm) || offMm === 0) { resolve(''); return; }
+        if (!lib || !lib.vb || !(wMm > 0) || !(hMm > 0) || !isFinite(offMm) || (offMm === 0 && !withZero)) { resolve([]); return; }
         var vb = lib.vb;
         var margin = (offMm > 0 ? offMm * n : 0) + 1;
         var totW = wMm + 2 * margin, totH = hMm + 2 * margin;
@@ -207,7 +207,7 @@
             if (data[4 * i + 3] > 127) { any = true; dOut[i] = 0; dIn[i] = INF; }
             else { dOut[i] = INF; dIn[i] = 0; }
           }
-          if (!any) { resolve(''); return; }
+          if (!any) { resolve([]); return; }
           edt2d(dOut, W, H);
           edt2d(dIn, W, H);
           var sd = new Float64Array(N);
@@ -218,7 +218,9 @@
 
           var kx = vb[2] / wMm, ky = vb[3] / hMm;
           var parts = [];
-          for (var k = withZero ? 0 : 1; k <= n; k++) {
+          var kMax = offMm === 0 ? 0 : n, levelsOut = [];
+          for (var k = (withZero || offMm === 0) ? 0 : 1; k <= kMax; k++) {
+            var lvl = [];
             var L = k * offMm * scale;
             var loops = contours(sd, W, H, L);
             for (var li = 0; li < loops.length; li++) {
@@ -230,14 +232,17 @@
                 var X = vb[0] + u * kx, Y = vb[1] + v * ky;
                 s += (q ? 'L' : 'M') + (+X.toFixed(3)) + ' ' + (+Y.toFixed(3));
               }
-              parts.push(s + 'Z');
+              lvl.push(s + 'Z');
             }
+            levelsOut.push(lvl.join(''));
           }
-          resolve(parts.join(''));
+          resolve(levelsOut);
         }).catch(reject);
       } catch (e) { reject(e); }
     });
   }
 
-  window.VDOffset = { compute: compute };
+  /* compute: ein Pfad-String; levels: ein Pfad-String je Stufe (Stufe 0 = Original, nur mit withZero oder offMm = 0) */
+  function compute(lib, wMm, hMm, offMm, n, withZero) { return run(lib, wMm, hMm, offMm, n, withZero).then(function (a) { return a.join(''); }); }
+  window.VDOffset = { compute: compute, levels: run };
 })();

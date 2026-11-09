@@ -218,6 +218,7 @@
         <div class="field"><label>Anzahl Ringe</label><input type="number" id="pOffN" min="1" max="20" step="1" value="1"></div>
         <label class="check" style="margin:6px 0"><input type="checkbox" id="pOffKeep" checked> Original-Umriss behalten</label>
         <div class="hint" style="margin:0 0 6px">+ = nach außen, − = nach innen. 0 = kein Versatz.</div>
+        <button id="fillBtn" style="width:100%;margin-bottom:6px" title="Füllt den Bereich zwischen dem Original-Umriss und dem äußersten Ring">Zwischenraum füllen</button>
         <button id="splitBtn" style="width:100%" title="Jeder Ring wird ein eigenes Teil, das du einzeln verschieben, drehen oder löschen kannst">In einzelne Teile aufteilen</button>
       </div>
 
@@ -241,6 +242,7 @@
         <button id="backBtn">Nach hinten</button>
         <button id="grpBtn" title="Strg+G">Gruppieren</button>
         <button id="ungrpBtn" title="Strg+Umschalt+G">Gruppe lösen</button>
+        <button id="fillBetweenBtn" style="grid-column:1/-1" title="Mehrere ineinanderliegende Konturen markieren (z. B. zwei Ringe): der Bereich dazwischen wird gefüllt und alles gruppiert">Zwischenraum füllen (Auswahl)</button>
       </div>
     </div>
     <div class="sect" id="groupHead" hidden>Gruppen auf der Arbeitsfläche</div>

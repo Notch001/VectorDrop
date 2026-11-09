@@ -494,7 +494,8 @@ function renderProps() {
   document.querySelectorAll('#modeSeg button').forEach((bt) => bt.classList.toggle('on', modes.size === 1 && modes.has(bt.dataset.mode)));
   const outl = sel.filter((i) => i.mode === 'outline');
   $('offBox').hidden = !outl.length;
-  if (outl.length) { $('pOff').value = outl[0].off || 0; $('pOffN').value = outl[0].offN || 1; $('pOffKeep').checked = outl[0].offKeep !== false; $('pOffN').disabled = !(outl[0].off); $('pOffKeep').disabled = !(outl[0].off); $('splitBtn').disabled = !outl.some((i) => Math.abs(i.off || 0) >= 0.05); }
+  if (outl.length) { $('pOff').value = outl[0].off || 0; $('pOffN').value = outl[0].offN || 1; $('pOffKeep').checked = outl[0].offKeep !== false; $('pOffN').disabled = !(outl[0].off); $('pOffKeep').disabled = !(outl[0].off); $('splitBtn').disabled = $('fillBtn').disabled = !outl.some((i) => Math.abs(i.off || 0) >= 0.05); }
+  $('fillBetweenBtn').disabled = sel.length < 2;
   const cols = new Set(sel.map((i) => i.color || ''));
   $('colIn').value = cols.size === 1 && sel[0].color ? sel[0].color : '#000000';
   document.querySelectorAll('#swatches button').forEach((bt) => bt.classList.toggle('on', cols.size === 1 && sel[0].color === bt.dataset.c));
@@ -706,6 +707,62 @@ async function splitRings() {
   $('splitBtn').disabled = false; renderProps();
 }
 $('splitBtn').onclick = splitRings;
+/* ---------- Zwischenraum füllen ---------- */
+const parsePolyD = (d) => d.split('M').filter(Boolean).map((sp) => sp.replace(/Z/g, '').split('L').map((t) => t.trim().split(/[\s,]+/).map(Number)));
+const toWorld = (M, lp) => lp.map(([x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]]);
+async function itemLoops(it, l) {   // Konturen eines Teils in Arbeitsflächen-Koordinaten (mm)
+  const M = itemMatrix(it, l), m = /^<path d="([ML\d\s.,\-Z]+)" fill="#000"\/>$/.exec(l.inner.trim());
+  let loops;
+  if (m) loops = parsePolyD(m[1]);                                       // aufgeteilte Ringe: exakte Linienzüge
+  else { const lv = await window.VDOffset.levels(l, it.w, it.h, 0, 1, true); loops = parsePolyD(lv[0] || ''); }
+  return loops.filter((lp) => lp.length >= 3).map((lp) => toWorld(M, lp));
+}
+function makeFillItem(loops, color, name) {
+  const all = loops.flat(), xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(0.1, Math.max(...xs) - x0), h = Math.max(0.1, Math.max(...ys) - y0);
+  const path = loops.map((lp) => 'M' + lp.map((p) => numf(p[0]) + ' ' + numf(p[1])).join('L') + 'Z').join('');
+  const nl = { id: newId('l'), name, vb: [numf(x0), numf(y0), numf(w), numf(h)], inner: `<path d="${path}" fill-rule="evenodd" fill="#000"/>`, cat: '', hidden: true };
+  S.lib.push(nl);
+  return normItem({ id: newId('i'), libId: nl.id, x: numf(x0), y: numf(y0), w: numf(w), h: numf(h), mode: 'fill', color: color || null });
+}
+/* Mehrere markierte, ineinanderliegende Konturen (z. B. zwei Ringe): Bereich dazwischen füllen und alles gruppieren */
+async function fillBetween() {
+  const sel = selItems(); if (sel.length < 2 || !window.VDOffset) return;
+  $('fillBetweenBtn').disabled = true;
+  try {
+    const loops = [];
+    for (const it of sel) { const l = libOf(it); if (l) loops.push(...await itemLoops(it, l)); }
+    if (loops.length < 2) { toast('Keine Konturen gefunden.'); return; }
+    snapshot();
+    const fill = makeFillItem(loops, (sel.find((i) => i.color) || {}).color, 'Füllung');
+    S.items.splice(Math.max(0, S.items.findIndex((i) => sel.includes(i))), 0, fill);   // Füllung unter die Linien legen
+    const g = newId('g'); [...sel, fill].forEach((i) => i.gid = g); gname(g);
+    S.sel = [...sel, fill].map((i) => i.id); render(); save();
+    toast('Zwischenraum gefüllt und als Gruppe zusammengefasst.');
+  } catch (e) { toast('Füllen fehlgeschlagen.'); }
+  renderProps();
+}
+/* Ein Teil mit Offset: Fläche zwischen Original-Umriss und äußerstem Ring füllen */
+async function fillOffset() {
+  const targets = selItems().filter((i) => i.mode === 'outline' && Math.abs(i.off || 0) >= 0.05);
+  if (!targets.length || !window.VDOffset) return;
+  $('fillBtn').disabled = true;
+  try {
+    let n = 0; snapshot();
+    for (const it of targets) {
+      const l = libOf(it); if (!l) continue;
+      const lv = await window.VDOffset.levels(l, it.w, it.h, it.off, Math.max(1, it.offN || 1), true), M = itemMatrix(it, l);
+      const loops = [...parsePolyD(lv[0] || ''), ...parsePolyD(lv[lv.length - 1] || '')].filter((lp) => lp.length >= 3).map((lp) => toWorld(M, lp));
+      if (loops.length < 2) continue;
+      const fill = makeFillItem(loops, it.color, l.name + ' Füllung');
+      S.items.splice(S.items.indexOf(it), 0, fill);
+      const g = it.gid || newId('g'); it.gid = g; fill.gid = g; gname(g); n++;
+    }
+    if (n) { render(); save(); toast('Zwischenraum gefüllt – Teil und Füllung sind gruppiert.'); } else undoStack.pop();
+  } catch (e) { toast('Füllen fehlgeschlagen.'); }
+  renderProps();
+}
+$('fillBetweenBtn').onclick = fillBetween; $('fillBtn').onclick = fillOffset;
 function setColor(c) { if (!S.sel.length) return; snapshot(); selItems().forEach((i) => i.color = c); render(); save(); }
 const PALETTE = ['#e03131', '#f08c00', '#f5d90a', '#2f9e44', '#1c7ed6', '#7048e8', '#d6336c', '#868e96'];
 $('swatches').innerHTML = PALETTE.map((c) => `<button data-c="${c}" style="background:${c}" title="${c}"></button>`).join('') + '<button data-c="" class="none" title="Originalfarbe">✕</button>';
