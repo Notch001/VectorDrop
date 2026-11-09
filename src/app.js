@@ -432,6 +432,11 @@ function renderOverlay() {
     sel.forEach((i) => { const c = center(i); h += `<rect transform="rotate(${numf(i.rot || 0)} ${numf(c.x)} ${numf(c.y)})" x="${i.x}" y="${i.y}" width="${i.w}" height="${i.h}" fill="none" stroke="#2563eb" stroke-width="${sw}" ${sel.length > 1 ? `stroke-dasharray="${4*px} ${3*px}"` : ''}/>`; });
     if (sel.length > 1) { const b = bounds(sel); h += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#2563eb" stroke-width="${sw}"/>`; }
     h += '</g>';
+    if (sel.length > 1) {
+      const b = bounds(sel), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      [['nw', b.x, b.y], ['n', cx, b.y], ['ne', b.x + b.w, b.y], ['e', b.x + b.w, cy], ['se', b.x + b.w, b.y + b.h], ['s', cx, b.y + b.h], ['sw', b.x, b.y + b.h], ['w', b.x, cy]]
+        .forEach(([k, hx, hy]) => { h += `<rect data-h="${k}" x="${hx - hs / 2}" y="${hy - hs / 2}" width="${hs}" height="${hs}" fill="#fff" stroke="#2563eb" stroke-width="${sw}" style="cursor:${k}-resize"><title>Größe der Auswahl ändern</title></rect>`; });
+    }
     if (sel.length === 1) {
       const i = sel[0], c = center(i), cur = (n) => ((i.rot || 0) % 180 === 0 ? n + '-resize' : 'crosshair');
       h += `<g transform="rotate(${numf(i.rot || 0)} ${numf(c.x)} ${numf(c.y)})">`;
@@ -489,7 +494,8 @@ function renderProps() {
   $('pX').value = round(b.x); $('pY').value = round(b.y);
   $('pW').value = round(single ? it.w : b.w); $('pH').value = round(single ? it.h : b.h);
   $('pR').value = single ? round(it.rot || 0) : '';
-  ['pW', 'pH', 'pLock', 'pR'].forEach((id) => $(id).disabled = !single);
+  $('pR').disabled = !single;
+  ['pW', 'pH', 'pLock'].forEach((id) => $(id).disabled = false);
   const modes = new Set(sel.map((i) => i.mode));
   document.querySelectorAll('#modeSeg button').forEach((bt) => bt.classList.toggle('on', modes.size === 1 && modes.has(bt.dataset.mode)));
   const outl = sel.filter((i) => i.mode === 'outline');
@@ -521,6 +527,25 @@ function addItem(libId, cx, cy) {
 const groupOf = (id) => { const it = S.items.find((i) => i.id === id); return it && it.gid ? S.items.filter((i) => i.gid === it.gid).map((i) => i.id) : [id]; };
 const selectIds = (ids) => { S.sel = [...new Set(ids.flatMap(groupOf))]; };
 
+/* ---------- Auswahl/Gruppe skalieren ---------- */
+const isQuarter = (r) => { r = Math.abs(normRot(r || 0)); return r < 0.01 || Math.abs(r - 90) < 0.01 || Math.abs(r - 180) < 0.01; };
+const allQuarter = (origs) => origs.every((o) => isQuarter(o.rot));
+/* Skaliert alle Teile so, dass die Ausgangsbox b auf [X1,X2]×[Y1,Y2] abgebildet wird (Offset wird mitskaliert) */
+function applyScale(origs, b, X1, X2, Y1, Y2) {
+  const sx = (X2 - X1) / b.w, sy = (Y2 - Y1) / b.h;
+  origs.forEach((o) => {
+    const it = S.items.find((i) => i.id === o.id); if (!it) return;
+    const r = Math.abs(normRot(o.rot || 0)), cx = o.x + o.w / 2, cy = o.y + o.h / 2;
+    let w, h;
+    if (r < 0.01 || Math.abs(r - 180) < 0.01) { w = o.w * sx; h = o.h * sy; }
+    else if (Math.abs(r - 90) < 0.01) { w = o.w * sy; h = o.h * sx; }
+    else { const u = Math.sqrt(sx * sy); w = o.w * u; h = o.h * u; }
+    it.w = Math.max(0.1, round(w)); it.h = Math.max(0.1, round(h));
+    it.x = round(X1 + (cx - b.x) * sx - it.w / 2); it.y = round(Y1 + (cy - b.y) * sy - it.h / 2);
+    if (o.off) it.off = round(o.off * Math.sqrt(sx * sy));
+  });
+}
+
 /* ---------- Maus / Zeiger ---------- */
 function pt(e) {
   const p = cv.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
@@ -531,6 +556,11 @@ function rubberRect() { const a = drag.start, b = drag.cur; return { x: Math.min
 cv.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
   const p = pt(e), hEl = e.target.closest('[data-h]');
+  if (hEl && S.sel.length > 1 && hEl.dataset.h !== 'rot') {
+    const sel = selItems(); snapshot();
+    drag = { mode: 'gresize', h: hEl.dataset.h, start: p, b0: bounds(sel), origs: sel.map((i) => ({ ...i })) };
+    cv.setPointerCapture(e.pointerId); return;
+  }
   if (hEl && S.sel.length === 1) {
     const it = selItems()[0]; snapshot();
     drag = hEl.dataset.h === 'rot' ? { mode: 'rotate', id: it.id, c: center(it) } : { mode: 'resize', h: hEl.dataset.h, start: p, orig: { ...it }, id: it.id };
@@ -581,6 +611,21 @@ cv.addEventListener('pointermove', (e) => {
     let dx = p.x - drag.start.x, dy = p.y - drag.start.y;
     if (S.snap && !e.ctrlKey) ({ dx, dy } = snapMove(dx, dy)); else drag.guides = { x: [], y: [] };
     drag.origs.forEach((o) => { const it = S.items.find((i) => i.id === o.id); it.x = round(o.x + dx); it.y = round(o.y + dy); });
+    updateTransforms(drag.origs.map((o) => o.id));
+  } else if (drag.mode === 'gresize') {
+    const b = drag.b0, k = drag.h, min = 2, dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+    let X1 = b.x, X2 = b.x + b.w, Y1 = b.y, Y2 = b.y + b.h;
+    if (k.includes('w')) X1 = Math.min(b.x + dx, X2 - min);
+    if (k.includes('e')) X2 = Math.max(b.x + b.w + dx, X1 + min);
+    if (k.includes('n')) Y1 = Math.min(b.y + dy, Y2 - min);
+    if (k.includes('s')) Y2 = Math.max(b.y + b.h + dy, Y1 + min);
+    if (!allQuarter(drag.origs) || ($('pLock').checked && k.length === 2)) {      // gleichmäßig skalieren
+      const sx = (X2 - X1) / b.w, sy = (Y2 - Y1) / b.h;
+      const sc = Math.max(0.02, k.length === 2 ? Math.min(sx, sy) : (k === 'e' || k === 'w' ? sx : sy)), nw = b.w * sc, nh = b.h * sc;
+      if (k.includes('w')) { X2 = b.x + b.w; X1 = X2 - nw; } else { X1 = b.x; X2 = X1 + nw; }
+      if (k.includes('n')) { Y2 = b.y + b.h; Y1 = Y2 - nh; } else { Y1 = b.y; Y2 = Y1 + nh; }
+    }
+    applyScale(drag.origs, b, X1, X2, Y1, Y2);
     updateTransforms(drag.origs.map((o) => o.id));
   } else if (drag.mode === 'rotate') {
     const it = S.items.find((i) => i.id === drag.id);
@@ -649,6 +694,13 @@ function applyProps(which) {
   if (which === 'pX' || which === 'pY') {
     const dx = which === 'pX' && isFinite(x) ? x - b.x : 0, dy = which === 'pY' && isFinite(y) ? y - b.y : 0;
     sel.forEach((i) => { i.x = round(i.x + dx); i.y = round(i.y + dy); });
+  } else if (sel.length > 1 && (which === 'pW' || which === 'pH')) {
+    const origs = sel.map((i) => ({ ...i })), w = parseFloat($('pW').value), h = parseFloat($('pH').value);
+    const uni = $('pLock').checked || !allQuarter(origs);
+    let nw = b.w, nh = b.h;
+    if (which === 'pW' && w > 0) { nw = w; if (uni) nh = b.h * w / b.w; }
+    if (which === 'pH' && h > 0) { nh = h; if (uni) nw = b.w * h / b.h; }
+    applyScale(origs, b, b.x, b.x + nw, b.y, b.y + nh);
   } else if (sel.length === 1) {
     const it = sel[0], r = it.w / it.h, c = center(it);
     if (which === 'pR') { const v = parseFloat($('pR').value); if (isFinite(v)) it.rot = normRot(v); }
@@ -758,7 +810,7 @@ async function fillOffset() {
       S.items.splice(S.items.indexOf(it), 0, fill);
       const g = it.gid || newId('g'); it.gid = g; fill.gid = g; gname(g); n++;
     }
-    if (n) { render(); save(); toast('Zwischenraum gefüllt – Teil und Füllung sind gruppiert.'); } else undoStack.pop();
+    if (n) { selectIds(targets.map((i) => i.id)); render(); save(); toast('Zwischenraum gefüllt – Teil und Füllung sind gruppiert.'); } else undoStack.pop();
   } catch (e) { toast('Füllen fehlgeschlagen.'); }
   renderProps();
 }
