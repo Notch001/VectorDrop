@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VectorDrop</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --line: #dde1e7; --text: #1f2933; --muted: #6b7684;
+    --accent: #2563eb; --accent-soft: #e6eefe; --danger: #d33a3a;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 14px/1.4 "Segoe UI", system-ui, sans-serif; color: var(--text); background: var(--bg); display: flex; flex-direction: column; }
+  button, input { font: inherit; color: inherit; }
+  button { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: #1d4ed8; }
+  button.icon { padding: 6px 9px; min-width: 34px; }
+
+  header { display: flex; align-items: center; gap: 14px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0 8px 0 0; letter-spacing: .2px; }
+  header h1 span { color: var(--accent); }
+  .group { display: flex; align-items: center; gap: 6px; }
+  .group + .group { padding-left: 14px; border-left: 1px solid var(--line); }
+  .group label { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  input[type=number] { width: 70px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  input[type=number]:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+  main { flex: 1; display: grid; grid-template-columns: 230px 1fr 220px; min-height: 0; }
+  aside { background: var(--panel); padding: 12px; overflow: auto; }
+  #libraryPanel { border-right: 1px solid var(--line); }
+  #propsPanel { border-left: 1px solid var(--line); }
+  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 0 0 8px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 6px 0 12px; }
+
+  #library { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .card { position: relative; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 6px 6px; text-align: center; cursor: grab; background: #fff; user-select: none; }
+  .card:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .card svg { width: 100%; height: 56px; display: block; pointer-events: none; }
+  .card .name { font-size: 12px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .del { position: absolute; top: 2px; right: 2px; border: 0; background: none; color: var(--muted); padding: 0 5px; font-size: 16px; line-height: 1.2; display: none; }
+  .card:hover .del { display: block; }
+  .card .del:hover { color: var(--danger); }
+
+  #stage { overflow: auto; position: relative; padding: 28px; background:
+      radial-gradient(circle, #cfd5de 1px, transparent 1px) 0 0 / 18px 18px, var(--bg); }
+  #stage.dropping { outline: 3px dashed var(--accent); outline-offset: -8px; }
+  #canvasWrap { display: inline-block; margin: 0 auto; box-shadow: 0 2px 14px rgba(20,30,50,.18); background: #fff; line-height: 0; }
+  #canvas { display: block; touch-action: none; user-select: none; }
+  .empty-hint { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); color: var(--muted); pointer-events: none; text-align: center; }
+
+  .field { display: grid; grid-template-columns: 1fr 84px; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .field label { color: var(--muted); }
+  .check { display: flex; gap: 6px; align-items: center; margin: 8px 0 12px; color: var(--muted); }
+  .stack { display: grid; gap: 6px; margin-top: 10px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  dialog { border: 0; border-radius: 14px; padding: 22px 24px; width: 360px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  dialog::backdrop { background: rgba(20,30,50,.35); }
+  dialog h3 { margin: 0 0 6px; }
+  dialog p { color: var(--muted); margin: 0 0 14px; }
+  dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #1f2933; color: #fff; padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Vector<span>Drop</span></h1>
+
+  <div class="group">
+    <label>Arbeitsfläche</label>
+    <input type="number" id="wsW" min="10" step="1" title="Breite in mm"> ×
+    <input type="number" id="wsH" min="10" step="1" title="Höhe in mm"> <label>mm</label>
+  </div>
+
+  <div class="group" title="Mit einem Objekt: an der Arbeitsfläche. Mit mehreren: aneinander.">
+    <label>Ausrichten</label>
+    <button class="icon" data-align="left"    title="Links">⇤</button>
+    <button class="icon" data-align="hcenter" title="Horizontal zentrieren">↔</button>
+    <button class="icon" data-align="right"   title="Rechts">⇥</button>
+    <button class="icon" data-align="top"     title="Oben">⤒</button>
+    <button class="icon" data-align="vmiddle" title="Vertikal zentrieren">↕</button>
+    <button class="icon" data-align="bottom"  title="Unten">⤓</button>
+    <button data-align="distH" title="Gleichmäßig verteilen (waagerecht, ab 3 Objekten)">Verteilen ↔</button>
+    <button data-align="distV" title="Gleichmäßig verteilen (senkrecht, ab 3 Objekten)">Verteilen ↕</button>
+  </div>
+
+  <div class="group">
+    <button id="undoBtn" title="Rückgängig (Strg+Z)">↶ Rückgängig</button>
+    <label>Zoom</label>
+    <button class="icon" id="zoomOut">−</button>
+    <button class="icon" id="zoomFit" title="Einpassen">▢</button>
+    <button class="icon" id="zoomIn">+</button>
+  </div>
+
+  <div class="spacer"></div>
+  <button id="settingsBtn">⚙ Einstellungen</button>
+  <button class="primary" id="exportBtn">SVG exportieren</button>
+</header>
+
+<main>
+  <aside id="libraryPanel">
+    <h2>Bibliothek</h2>
+    <button id="importBtn" style="width:100%">+ SVG-Dateien laden</button>
+    <input type="file" id="fileInput" accept=".svg,image/svg+xml" multiple hidden>
+    <button id="exportLibBtn" style="width:100%;margin-top:6px">Bibliothek speichern</button>
+    <button id="importLibBtn" style="width:100%;margin-top:6px">Bibliothek öffnen</button>
+    <input type="file" id="libInput" accept=".json,application/json" hidden>
+    <div class="hint">Teile auf die Arbeitsfläche ziehen – oder doppelklicken.</div>
+    <div id="library"></div>
+  </aside>
+
+  <div id="stage">
+    <div id="canvasWrap"><svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div class="empty-hint" id="emptyHint"><b>Arbeitsfläche ist leer</b><br>Ziehe ein Teil aus der Bibliothek hierher.</div>
+  </div>
+
+  <aside id="propsPanel">
+    <h2>Eigenschaften</h2>
+    <div id="propsEmpty" class="hint">Wähle ein Objekt aus. Mehrere Objekte: Umschalt-Taste gedrückt halten oder Strg+A.</div>
+    <div id="props" hidden>
+      <div class="field"><label>X (mm)</label><input type="number" id="pX" step="0.5"></div>
+      <div class="field"><label>Y (mm)</label><input type="number" id="pY" step="0.5"></div>
+      <div class="field"><label>Breite (mm)</label><input type="number" id="pW" step="0.5" min="1"></div>
+      <div class="field"><label>Höhe (mm)</label><input type="number" id="pH" step="0.5" min="1"></div>
+      <label class="check"><input type="checkbox" id="pLock" checked> Seitenverhältnis halten</label>
+      <div class="row2">
+        <button id="dupBtn">Duplizieren</button>
+        <button id="delBtn">Löschen</button>
+        <button id="frontBtn">Nach vorne</button>
+        <button id="backBtn">Nach hinten</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="settingsDlg">
+  <h3>Einstellungen</h3>
+  <p>Lege die maximale Größe der Arbeitsfläche fest. Größer kann niemand das Design anlegen.</p>
+  <div class="field"><label>Max. Breite (mm)</label><input type="number" id="sMaxW" min="10" step="10"></div>
+  <div class="field"><label>Max. Höhe (mm)</label><input type="number" id="sMaxH" min="10" step="10"></div>
+  <div class="buttons">
+    <button id="sCancel">Abbrechen</button>
+    <button class="primary" id="sSave">Speichern</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const $ = (id) => document.getElementById(id);
+const STORE = 'vectordrop.v1';
+
+/* ---------- Standard-Bibliothek ---------- */
+const DEFAULT_LIB = [
+  { name: 'Kreis',    vb: [0,0,100,100], inner: '<circle cx="50" cy="50" r="48" fill="#4f8ef7" stroke="#1d4ed8" stroke-width="3"/>' },
+  { name: 'Quadrat',  vb: [0,0,100,100], inner: '<rect x="3" y="3" width="94" height="94" fill="#f5a524" stroke="#b9770e" stroke-width="3"/>' },
+  { name: 'Dreieck',  vb: [0,0,100,100], inner: '<polygon points="50,4 97,96 3,96" fill="#34c38f" stroke="#1f8a62" stroke-width="3" stroke-linejoin="round"/>' },
+  { name: 'Haus',     vb: [0,0,100,100], inner: '<rect x="18" y="45" width="64" height="50" fill="#f3e3c3" stroke="#8a6b2f" stroke-width="3"/><polygon points="8,48 50,8 92,48" fill="#d9534f" stroke="#9c2f2c" stroke-width="3" stroke-linejoin="round"/><rect x="42" y="65" width="16" height="30" fill="#8a6b2f"/><rect x="24" y="55" width="12" height="12" fill="#bfe3ff" stroke="#8a6b2f" stroke-width="2"/><rect x="64" y="55" width="12" height="12" fill="#bfe3ff" stroke="#8a6b2f" stroke-width="2"/>' },
+  { name: 'Stern',    vb: [0,0,100,100], inner: '<polygon points="50,4 62,36 96,38 69,59 79,93 50,73 21,93 31,59 4,38 38,36" fill="#ffd43b" stroke="#c99a00" stroke-width="3" stroke-linejoin="round"/>' },
+  { name: 'Herz',     vb: [0,0,100,100], inner: '<path d="M50 90 C10 60 4 34 22 20 C36 10 48 18 50 30 C52 18 64 10 78 20 C96 34 90 60 50 90Z" fill="#ef5b7b" stroke="#a82a47" stroke-width="3" stroke-linejoin="round"/>' },
+];
+
+/* ---------- Zustand ---------- */
+const S = {
+  maxW: 300, maxH: 300,     // aus den Einstellungen (mm)
+  W: 200, H: 150,           // aktuelle Arbeitsfläche (mm)
+  lib: [],                  // {id,name,vb,inner}
+  items: [],                // {id,libId,x,y,w,h}
+  sel: [],
+  zoom: 3,                  // Pixel pro mm
+};
+let undoStack = [];
+let uid = 1;
+const newId = (p) => p + (Date.now().toString(36)) + (uid++);
+
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify({ maxW:S.maxW, maxH:S.maxH, W:S.W, H:S.H, lib:S.lib, items:S.items })); } catch (e) {}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (d) { Object.assign(S, { maxW:d.maxW, maxH:d.maxH, W:d.W, H:d.H, lib:d.lib, items:d.items }); return; }
+  } catch (e) {}
+  S.lib = DEFAULT_LIB.map((l) => ({ ...l, id: newId('l') }));
+}
+
+/* ---------- Hilfsfunktionen ---------- */
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+const round = (v) => Math.round(v * 100) / 100;
+const libOf = (it) => S.lib.find((l) => l.id === it.libId);
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
+function snapshot() { undoStack.push(JSON.stringify({ items: S.items, W: S.W, H: S.H })); if (undoStack.length > 100) undoStack.shift(); }
+function undo() {
+  const s = undoStack.pop(); if (!s) return;
+  const d = JSON.parse(s); S.items = d.items; S.W = d.W; S.H = d.H;
+  S.sel = S.sel.filter((id) => S.items.some((i) => i.id === id));
+  render(); save();
+}
+
+/* IDs innerhalb eines Teils eindeutig machen (Verläufe etc.), damit Kopien sich nicht stören */
+function uniq(inner, prefix) {
+  const ids = [...inner.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+  let out = inner;
+  ids.forEach((id) => {
+    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp('id="' + esc + '"', 'g'), 'id="' + prefix + id + '"')
+             .replace(new RegExp('url\\(#' + esc + '\\)', 'g'), 'url(#' + prefix + id + ')')
+             .replace(new RegExp('href="#' + esc + '"', 'g'), 'href="#' + prefix + id + '"');
+  });
+  return out;
+}
+
+/* ---------- SVG importieren ---------- */
+function parseSvgText(text, fileName) {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (!root || root.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) return null;
+  root.querySelectorAll('script,foreignObject').forEach((n) => n.remove());
+  root.querySelectorAll('*').forEach((el) => {
+    [...el.attributes].forEach((a) => {
+      const n = a.name.toLowerCase(), v = a.value.trim().toLowerCase();
+      if (n.startsWith('on')) el.removeAttribute(a.name);
+      else if ((n === 'href' || n === 'xlink:href') && !(v.startsWith('#') || v.startsWith('data:image/'))) el.removeAttribute(a.name);
+    });
+  });
+  let vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  if (vb.length !== 4 || vb.some((n) => !isFinite(n)) || vb[2] <= 0 || vb[3] <= 0) {
+    const w = parseFloat(root.getAttribute('width')) || 100, h = parseFloat(root.getAttribute('height')) || 100;
+    vb = [0, 0, w, h];
+  }
+  const inner = [...root.childNodes].map((n) => new XMLSerializer().serializeToString(n)).join('');
+  return { id: newId('l'), name: fileName.replace(/\.svg$/i, ''), vb, inner };
+}
+async function importFiles(files) {
+  let ok = 0;
+  for (const f of files) {
+    const lib = parseSvgText(await f.text(), f.name);
+    if (lib) { S.lib.push(lib); ok++; } else toast('„' + f.name + '“ ist keine gültige SVG-Datei.');
+  }
+  if (ok) { renderLibrary(); save(); toast(ok + ' Teil(e) zur Bibliothek hinzugefügt.'); }
+}
+
+/* ---------- Rendering ---------- */
+function bounds(items) {
+  const x1 = Math.min(...items.map((i) => i.x)), y1 = Math.min(...items.map((i) => i.y));
+  const x2 = Math.max(...items.map((i) => i.x + i.w)), y2 = Math.max(...items.map((i) => i.y + i.h));
+  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+}
+const selItems = () => S.items.filter((i) => S.sel.includes(i.id));
+
+function renderLibrary() {
+  const box = $('library'); box.innerHTML = '';
+  S.lib.forEach((l) => {
+    const c = document.createElement('div'); c.className = 'card'; c.draggable = true; c.title = l.name;
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', l.vb.join(' '));
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.innerHTML = uniq(l.inner, 'th' + l.id + '_');
+    const n = document.createElement('div'); n.className = 'name'; n.textContent = l.name;
+    const d = document.createElement('button'); d.className = 'del'; d.textContent = '×'; d.title = 'Aus Bibliothek entfernen';
+    d.onclick = (e) => { e.stopPropagation(); if (confirm('„' + l.name + '“ aus der Bibliothek entfernen?\nBereits platzierte Exemplare auf der Arbeitsfläche werden ebenfalls entfernt.')) { snapshot(); S.lib = S.lib.filter((x) => x.id !== l.id); S.items = S.items.filter((i) => i.libId !== l.id); S.sel = []; renderLibrary(); render(); save(); } };
+    c.append(svg, n, d);
+    c.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/x-vectordrop', l.id); e.dataTransfer.effectAllowed = 'copy'; });
+    c.addEventListener('dblclick', () => addItem(l.id, S.W / 2, S.H / 2));
+    box.append(c);
+  });
+}
+
+function render() {
+  const cv = $('canvas'), z = S.zoom;
+  cv.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`);
+  cv.setAttribute('width', S.W * z); cv.setAttribute('height', S.H * z);
+  let html = '';
+  S.items.forEach((it) => {
+    const l = libOf(it); if (!l) return;
+    html += `<svg data-id="${it.id}" x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" viewBox="${l.vb.join(' ')}" preserveAspectRatio="none" overflow="hidden" style="cursor:move">${uniq(l.inner, it.id + '_')}</svg>`;
+  });
+  const sel = selItems();
+  if (sel.length) {
+    const b = bounds(sel), px = 1 / z, hs = 9 * px;
+    html += `<g style="pointer-events:none">`;
+    sel.forEach((i) => { html += `<rect x="${i.x}" y="${i.y}" width="${i.w}" height="${i.h}" fill="none" stroke="#2563eb" stroke-width="${1.5*px}" ${sel.length>1?`stroke-dasharray="${4*px} ${3*px}"`:''}/>`; });
+    if (sel.length > 1) html += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#2563eb" stroke-width="${1.5*px}"/>`;
+    html += `</g>`;
+    if (sel.length === 1) {
+      const i = sel[0];
+      [['nw',i.x,i.y],['n',i.x+i.w/2,i.y],['ne',i.x+i.w,i.y],['e',i.x+i.w,i.y+i.h/2],['se',i.x+i.w,i.y+i.h],['s',i.x+i.w/2,i.y+i.h],['sw',i.x,i.y+i.h],['w',i.x,i.y+i.h/2]]
+        .forEach(([k,hx,hy]) => { html += `<rect data-h="${k}" x="${hx-hs/2}" y="${hy-hs/2}" width="${hs}" height="${hs}" fill="#fff" stroke="#2563eb" stroke-width="${1.5*px}" style="cursor:${k}-resize"/>`; });
+    }
+  }
+  cv.innerHTML = html;
+  $('emptyHint').style.display = S.items.length ? 'none' : '';
+  $('wsW').value = S.W; $('wsH').value = S.H;
+  renderProps();
+  $('undoBtn').disabled = !undoStack.length;
+  document.querySelectorAll('[data-align]').forEach((b) => {
+    const a = b.dataset.align, n = S.sel.length;
+    b.disabled = a.startsWith('dist') ? n < 3 : n < 1;
+  });
+}
+
+function renderProps() {
+  const sel = selItems();
+  $('props').hidden = sel.length === 0; $('propsEmpty').hidden = sel.length !== 0;
+  if (!sel.length) return;
+  const b = sel.length === 1 ? sel[0] : bounds(sel);
+  $('pX').value = round(b.x); $('pY').value = round(b.y); $('pW').value = round(b.w); $('pH').value = round(b.h);
+  const single = sel.length === 1;
+  ['pW','pH','pLock'].forEach((id) => $(id).disabled = !single);
+}
+
+/* ---------- Teile hinzufügen ---------- */
+function addItem(libId, cx, cy) {
+  const l = S.lib.find((x) => x.id === libId); if (!l) return;
+  snapshot();
+  const target = Math.min(S.W, S.H) * 0.3, ratio = l.vb[2] / l.vb[3];
+  let w = ratio >= 1 ? target : target * ratio, h = ratio >= 1 ? target / ratio : target;
+  const it = { id: newId('i'), libId, w: round(w), h: round(h), x: 0, y: 0 };
+  it.x = round(cx - it.w / 2); it.y = round(cy - it.h / 2);
+  S.items.push(it); S.sel = [it.id]; render(); save();
+}
+
+/* ---------- Maus / Zeiger ---------- */
+const cv = $('canvas');
+function pt(e) {
+  const p = cv.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  const m = p.matrixTransform(cv.getScreenCTM().inverse()); return { x: m.x, y: m.y };
+}
+let drag = null;
+
+cv.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  const p = pt(e);
+  const hEl = e.target.closest('[data-h]');
+  if (hEl) {
+    snapshot();
+    const it = selItems()[0];
+    drag = { mode: 'resize', h: hEl.dataset.h, start: p, orig: { ...it }, id: it.id };
+  } else {
+    const el = e.target.closest('svg[data-id]');
+    if (!el || el === cv) { S.sel = []; drag = null; render(); return; }
+    const id = el.dataset.id;
+    if (e.shiftKey) { S.sel = S.sel.includes(id) ? S.sel.filter((x) => x !== id) : [...S.sel, id]; }
+    else if (!S.sel.includes(id)) S.sel = [id];
+    render();
+    if (!S.sel.includes(id)) return;
+    snapshot();
+    drag = { mode: 'move', start: p, origs: selItems().map((i) => ({ id: i.id, x: i.x, y: i.y })), moved: false };
+  }
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const p = pt(e), dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+  if (drag.mode === 'move') {
+    drag.moved = true;
+    drag.origs.forEach((o) => { const it = S.items.find((i) => i.id === o.id); it.x = round(o.x + dx); it.y = round(o.y + dy); });
+  } else {
+    const it = S.items.find((i) => i.id === drag.id), o = drag.orig, k = drag.h, min = 2;
+    let x1 = o.x, y1 = o.y, x2 = o.x + o.w, y2 = o.y + o.h;
+    if (k.includes('w')) x1 = Math.min(o.x + dx, x2 - min);
+    if (k.includes('e')) x2 = Math.max(o.x + o.w + dx, x1 + min);
+    if (k.includes('n')) y1 = Math.min(o.y + dy, y2 - min);
+    if (k.includes('s')) y2 = Math.max(o.y + o.h + dy, y1 + min);
+    const keep = $('pLock').checked && k.length === 2;      // Ecken behalten das Seitenverhältnis
+    if (keep) {
+      const r = o.w / o.h; let w = x2 - x1, h = y2 - y1;
+      if (w / h > r) w = h * r; else h = w / r;
+      w = Math.max(w, min); h = Math.max(h, min);
+      if (k.includes('w')) x1 = o.x + o.w - w; else x2 = x1 + w;
+      if (k.includes('n')) y1 = o.y + o.h - h; else y2 = y1 + h;
+    }
+    it.x = round(x1); it.y = round(y1); it.w = round(x2 - x1); it.h = round(y2 - y1);
+  }
+  render();
+});
+const endDrag = () => { if (!drag) return; if (drag.mode === 'move' && !drag.moved) undoStack.pop(); drag = null; render(); save(); };
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+
+/* Drag & Drop aus der Bibliothek */
+const stage = $('stage');
+stage.addEventListener('dragover', (e) => { if ([...e.dataTransfer.types].includes('text/x-vectordrop')) { e.preventDefault(); stage.classList.add('dropping'); } });
+stage.addEventListener('dragleave', () => stage.classList.remove('dropping'));
+stage.addEventListener('drop', (e) => {
+  stage.classList.remove('dropping');
+  const id = e.dataTransfer.getData('text/x-vectordrop'); if (!id) return;
+  e.preventDefault();
+  const p = pt(e);
+  addItem(id, clamp(p.x, 0, S.W), clamp(p.y, 0, S.H));
+});
+
+/* ---------- Eigenschaften ---------- */
+function applyProps(which) {
+  const sel = selItems(); if (!sel.length) return;
+  snapshot();
+  const x = parseFloat($('pX').value), y = parseFloat($('pY').value);
+  if (sel.length > 1) {
+    const b = bounds(sel);
+    const dx = isFinite(x) ? x - b.x : 0, dy = isFinite(y) ? y - b.y : 0;
+    sel.forEach((i) => { i.x = round(i.x + dx); i.y = round(i.y + dy); });
+  } else {
+    const it = sel[0], r = it.w / it.h;
+    if (isFinite(x)) it.x = x; if (isFinite(y)) it.y = y;
+    let w = parseFloat($('pW').value), h = parseFloat($('pH').value);
+    if (which === 'pW' && w > 0) { it.w = w; if ($('pLock').checked) it.h = round(w / r); }
+    if (which === 'pH' && h > 0) { it.h = h; if ($('pLock').checked) it.w = round(h * r); }
+  }
+  render(); save();
+}
+['pX','pY','pW','pH'].forEach((id) => $(id).addEventListener('change', () => applyProps(id)));
+
+$('dupBtn').onclick = duplicate;
+function duplicate() {
+  const sel = selItems(); if (!sel.length) return; snapshot();
+  const copies = sel.map((i) => ({ ...i, id: newId('i'), x: round(i.x + 5), y: round(i.y + 5) }));
+  S.items.push(...copies); S.sel = copies.map((c) => c.id); render(); save();
+}
+$('delBtn').onclick = removeSel;
+function removeSel() { if (!S.sel.length) return; snapshot(); S.items = S.items.filter((i) => !S.sel.includes(i.id)); S.sel = []; render(); save(); }
+$('frontBtn').onclick = () => { snapshot(); const s = selItems(); S.items = [...S.items.filter((i) => !s.includes(i)), ...s]; render(); save(); };
+$('backBtn').onclick = () => { snapshot(); const s = selItems(); S.items = [...s, ...S.items.filter((i) => !s.includes(i))]; render(); save(); };
+
+/* ---------- Ausrichten ---------- */
+document.querySelectorAll('[data-align]').forEach((btn) => btn.addEventListener('click', () => {
+  const sel = selItems(); if (!sel.length) return;
+  const a = btn.dataset.align;
+  snapshot();
+  if (a === 'distH' || a === 'distV') {
+    const hz = a === 'distH', pos = hz ? 'x' : 'y', size = hz ? 'w' : 'h';
+    const s = [...sel].sort((p, q) => p[pos] - q[pos]);
+    const start = s[0][pos], end = s[s.length-1][pos] + s[s.length-1][size];
+    const total = s.reduce((t, i) => t + i[size], 0), gap = (end - start - total) / (s.length - 1);
+    let cur = start; s.forEach((i) => { i[pos] = round(cur); cur += i[size] + gap; });
+  } else {
+    const ref = sel.length > 1 ? bounds(sel) : { x: 0, y: 0, w: S.W, h: S.H };
+    sel.forEach((i) => {
+      if (a === 'left') i.x = ref.x;
+      if (a === 'right') i.x = round(ref.x + ref.w - i.w);
+      if (a === 'hcenter') i.x = round(ref.x + (ref.w - i.w) / 2);
+      if (a === 'top') i.y = ref.y;
+      if (a === 'bottom') i.y = round(ref.y + ref.h - i.h);
+      if (a === 'vmiddle') i.y = round(ref.y + (ref.h - i.h) / 2);
+    });
+  }
+  render(); save();
+}));
+
+/* ---------- Arbeitsfläche, Zoom, Einstellungen ---------- */
+function setWorkspace(w, h) {
+  const nw = clamp(Math.round(w) || S.W, 10, S.maxW), nh = clamp(Math.round(h) || S.H, 10, S.maxH);
+  if (nw !== Math.round(w) || nh !== Math.round(h)) toast('Maximale Größe: ' + S.maxW + ' × ' + S.maxH + ' mm');
+  snapshot(); S.W = nw; S.H = nh; fit(); save();
+}
+$('wsW').addEventListener('change', () => setWorkspace(parseFloat($('wsW').value), S.H));
+$('wsH').addEventListener('change', () => setWorkspace(S.W, parseFloat($('wsH').value)));
+function fit() {
+  const st = $('stage');
+  S.zoom = Math.max(0.5, Math.min((st.clientWidth - 60) / S.W, (st.clientHeight - 60) / S.H));
+  render();
+}
+$('zoomIn').onclick = () => { S.zoom = Math.min(S.zoom * 1.25, 40); render(); };
+$('zoomOut').onclick = () => { S.zoom = Math.max(S.zoom / 1.25, 0.3); render(); };
+$('zoomFit').onclick = fit;
+window.addEventListener('resize', fit);
+
+$('settingsBtn').onclick = () => { $('sMaxW').value = S.maxW; $('sMaxH').value = S.maxH; $('settingsDlg').showModal(); };
+$('sCancel').onclick = () => $('settingsDlg').close();
+$('sSave').onclick = () => {
+  const w = parseInt($('sMaxW').value, 10), h = parseInt($('sMaxH').value, 10);
+  if (!(w >= 10 && h >= 10)) { toast('Bitte gültige Werte (mindestens 10 mm) eingeben.'); return; }
+  S.maxW = w; S.maxH = h;
+  S.W = Math.min(S.W, w); S.H = Math.min(S.H, h);
+  $('settingsDlg').close(); fit(); save(); toast('Einstellungen gespeichert.');
+};
+
+/* ---------- Export ---------- */
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function buildSvg() {
+  const parts = S.items.map((it) => {
+    const l = libOf(it); if (!l) return '';
+    return `  <svg x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" viewBox="${l.vb.join(' ')}" preserveAspectRatio="none" overflow="hidden">${uniq(l.inner, it.id + '_')}</svg>`;
+  }).join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="${NS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${S.W}mm" height="${S.H}mm" viewBox="0 0 ${S.W} ${S.H}">\n${parts}\n</svg>\n`;
+}
+$('exportBtn').onclick = () => {
+  if (!S.items.length) { toast('Die Arbeitsfläche ist noch leer.'); return; }
+  download('design.svg', buildSvg(), 'image/svg+xml'); toast('design.svg exportiert.');
+};
+window.__buildSvg = buildSvg; // für Tests
+
+/* Bibliothek als Datei teilen */
+$('exportLibBtn').onclick = () => download('bibliothek.json', JSON.stringify({ vectordropLibrary: 1, lib: S.lib }, null, 1), 'application/json');
+$('importLibBtn').onclick = () => $('libInput').click();
+$('libInput').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d.vectordropLibrary || !Array.isArray(d.lib)) throw 0;
+    const known = new Set(S.lib.map((l) => l.id));
+    const add = d.lib.filter((l) => !known.has(l.id) && l.inner && l.vb && l.vb.length === 4)
+      .map((l) => { const t = parseSvgText(`<svg xmlns="${NS}" viewBox="${l.vb.join(' ')}">${l.inner}</svg>`, l.name || 'Teil'); return t && { ...t, id: l.id, name: l.name || 'Teil' }; }).filter(Boolean);
+    S.lib.push(...add); renderLibrary(); save(); toast(add.length + ' Teil(e) hinzugefügt.');
+  } catch (err) { toast('Das ist keine gültige Bibliotheksdatei.'); }
+});
+
+$('importBtn').onclick = () => $('fileInput').click();
+$('fileInput').addEventListener('change', (e) => { importFiles([...e.target.files]); e.target.value = ''; });
+// SVG-Dateien direkt auf die Bibliothek ziehen
+const lp = $('libraryPanel');
+lp.addEventListener('dragover', (e) => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+lp.addEventListener('drop', (e) => { if (e.dataTransfer.files.length) { e.preventDefault(); importFiles([...e.dataTransfer.files].filter((f) => /\.svg$/i.test(f.name))); } });
+
+/* ---------- Tastatur ---------- */
+$('undoBtn').onclick = undo;
+document.addEventListener('keydown', (e) => {
+  if (/INPUT|TEXTAREA/.test(document.activeElement.tagName) || $('settingsDlg').open) return;
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  else if (ctrl && e.key.toLowerCase() === 'a') { e.preventDefault(); S.sel = S.items.map((i) => i.id); render(); }
+  else if (ctrl && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicate(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { removeSel(); }
+  else if (e.key === 'Escape') { S.sel = []; render(); }
+  else if (e.key.startsWith('Arrow') && S.sel.length) {
+    e.preventDefault(); snapshot();
+    const st = e.shiftKey ? 5 : 1;
+    selItems().forEach((i) => { if (e.key === 'ArrowLeft') i.x -= st; if (e.key === 'ArrowRight') i.x += st; if (e.key === 'ArrowUp') i.y -= st; if (e.key === 'ArrowDown') i.y += st; });
+    render(); save();
+  }
+});
+
+/* ---------- Start ---------- */
+load();
+renderLibrary();
+fit();
+})();
+</script>
+</body>
+</html>
