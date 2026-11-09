@@ -161,12 +161,12 @@ const STORE = 'vectordrop.v1';
 
 /* ---------- Standard-Bibliothek ---------- */
 const DEFAULT_LIB = [
-  { name: 'Kreis',    vb: [0,0,100,100], inner: '<circle cx="50" cy="50" r="48" fill="#4f8ef7" stroke="#1d4ed8" stroke-width="3"/>' },
-  { name: 'Quadrat',  vb: [0,0,100,100], inner: '<rect x="3" y="3" width="94" height="94" fill="#f5a524" stroke="#b9770e" stroke-width="3"/>' },
-  { name: 'Dreieck',  vb: [0,0,100,100], inner: '<polygon points="50,4 97,96 3,96" fill="#34c38f" stroke="#1f8a62" stroke-width="3" stroke-linejoin="round"/>' },
-  { name: 'Haus',     vb: [0,0,100,100], inner: '<rect x="18" y="45" width="64" height="50" fill="#f3e3c3" stroke="#8a6b2f" stroke-width="3"/><polygon points="8,48 50,8 92,48" fill="#d9534f" stroke="#9c2f2c" stroke-width="3" stroke-linejoin="round"/><rect x="42" y="65" width="16" height="30" fill="#8a6b2f"/><rect x="24" y="55" width="12" height="12" fill="#bfe3ff" stroke="#8a6b2f" stroke-width="2"/><rect x="64" y="55" width="12" height="12" fill="#bfe3ff" stroke="#8a6b2f" stroke-width="2"/>' },
-  { name: 'Stern',    vb: [0,0,100,100], inner: '<polygon points="50,4 62,36 96,38 69,59 79,93 50,73 21,93 31,59 4,38 38,36" fill="#ffd43b" stroke="#c99a00" stroke-width="3" stroke-linejoin="round"/>' },
-  { name: 'Herz',     vb: [0,0,100,100], inner: '<path d="M50 90 C10 60 4 34 22 20 C36 10 48 18 50 30 C52 18 64 10 78 20 C96 34 90 60 50 90Z" fill="#ef5b7b" stroke="#a82a47" stroke-width="3" stroke-linejoin="round"/>' },
+  { name: 'Kreis',    vb: [0,0,100,100], inner: '<circle cx="50" cy="50" r="48" fill="#000"/>' },
+  { name: 'Quadrat',  vb: [0,0,100,100], inner: '<rect x="2" y="2" width="96" height="96" fill="#000"/>' },
+  { name: 'Dreieck',  vb: [0,0,100,100], inner: '<polygon points="50,3 98,97 2,97" fill="#000"/>' },
+  { name: 'Haus',     vb: [0,0,100,100], inner: '<path fill="#000" fill-rule="evenodd" d="M50 4 L97 46 L84 46 L84 96 L16 96 L16 46 L3 46 Z M42 96 L42 66 L58 66 L58 96 Z"/>' },
+  { name: 'Stern',    vb: [0,0,100,100], inner: '<polygon points="50,3 62,36 97,38 70,60 80,95 50,75 20,95 30,60 3,38 38,36" fill="#000"/>' },
+  { name: 'Herz',     vb: [0,0,100,100], inner: '<path d="M50 92 C8 60 2 34 20 18 C35 6 48 16 50 28 C52 16 65 6 80 18 C98 34 92 60 50 92Z" fill="#000"/>' },
 ];
 
 /* ---------- Zustand ---------- */
@@ -493,7 +493,9 @@ function download(name, text, type) {
 function buildSvg() {
   const parts = S.items.map((it) => {
     const l = libOf(it); if (!l) return '';
-    return `  <svg x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" viewBox="${l.vb.join(' ')}" preserveAspectRatio="none" overflow="hidden">${uniq(l.inner, it.id + '_')}</svg>`;
+    const sx = it.w / l.vb[2], sy = it.h / l.vb[3];
+    const tx = it.x - l.vb[0] * sx, ty = it.y - l.vb[1] * sy;
+    return `  <g transform="matrix(${+sx.toFixed(6)} 0 0 ${+sy.toFixed(6)} ${+tx.toFixed(4)} ${+ty.toFixed(4)})">${uniq(l.inner, it.id + '_')}</g>`;
   }).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="${NS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${S.W}mm" height="${S.H}mm" viewBox="0 0 ${S.W} ${S.H}">\n${parts}\n</svg>\n`;
 }
