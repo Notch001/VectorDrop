@@ -66,36 +66,31 @@
   dialog p { color: var(--muted); margin: 0 0 14px; }
   dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
-  /* Assistent */
-  #wizDlg { width: min(980px, 95vw); padding: 0; }
-  .wz-head { display: flex; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--line); align-items: center; }
-  .wz-head h3 { margin: 0 16px 0 0; }
-  .wz-step { color: var(--muted); padding: 4px 12px; border-radius: 999px; background: var(--bg); }
-  .wz-step.on { background: var(--accent); color: #fff; font-weight: 600; }
-  .wz-step.done { background: var(--accent-soft); color: var(--accent); }
-  .wz-body { padding: 18px 20px; min-height: 420px; }
-  .wz-foot { display: flex; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--bg); border-radius: 0 0 14px 14px; }
-  .dropzone { border: 3px dashed var(--line); border-radius: 14px; height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; color: var(--muted); }
-  .dropzone.over { border-color: var(--accent); background: var(--accent-soft); }
-  .dropzone .big { font-size: 20px; color: var(--text); }
-  .kbd { background: #fff; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px; font-weight: 600; color: var(--text); }
-  .wz-cols { display: grid; grid-template-columns: 1fr 1fr 240px; gap: 14px; }
-  .wz-cols > div:last-child { max-height: 400px; overflow-y: auto; padding-right: 6px; }
-  .pane { border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
-  .pane h4 { margin: 0; padding: 6px 10px; font-size: 12px; color: var(--muted); background: var(--bg); text-transform: uppercase; letter-spacing: .6px; }
-  .pane .view { height: 340px; display: flex; align-items: center; justify-content: center; padding: 6px; }
-  .pane canvas, .pane svg { max-width: 100%; max-height: 100%; }
-  #wzCrop { cursor: crosshair; touch-action: none; }
-  .ctl { margin-bottom: 14px; }
-  .ctl label { display: flex; justify-content: space-between; font-weight: 600; }
-  .ctl small { color: var(--muted); display: block; }
-  .ctl input[type=range] { width: 100%; }
-  #wzInfo { color: var(--muted); font-size: 12px; margin-top: 6px; }
-  .wz-final { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; }
-  .wz-final .pane .view { height: 300px; }
-  .wz-final input[type=text] { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; margin: 6px 0 14px; }
   #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #1f2933; color: #fff; padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity .25s; pointer-events: none; }
   #toast.show { opacity: 1; }
+
+  #center { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  #center #stage { flex: 1; }
+  #status { display: flex; gap: 14px; align-items: center; padding: 6px 14px; background: var(--panel); border-top: 1px solid var(--line); font-size: 13px; min-height: 34px; flex-wrap: wrap; }
+  #status .ok { color: #1c8a56; }
+  #status button { border: 0; background: #fff3cd; color: #8a5a00; padding: 2px 10px; border-radius: 999px; }
+  #status button:hover { background: #ffe69c; }
+  #status .info { color: var(--muted); margin-left: auto; }
+  header .check { margin: 0; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  select, input[type=text], input[type=search] { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; width: 100%; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 8px 0 12px; }
+  .seg button { border: 0; border-radius: 0; padding: 6px 4px; font-size: 12px; background: #fff; }
+  .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .sect { font-size: 11px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin: 14px 0 6px; }
+  .row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .card .ed { position: absolute; top: 2px; left: 2px; border: 0; background: none; color: var(--muted); padding: 0 5px; font-size: 13px; display: none; }
+  .card:hover .ed { display: block; }
+  .card .ed:hover { color: var(--accent); }
+  .card .cat { font-size: 10px; color: var(--muted); }
+  #libTools { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 10px; }
+  #textDlg { width: 420px; }
+  #textPrev { width: 100%; height: 110px; border: 1px solid var(--line); border-radius: 8px; background: #fff; margin: 10px 0; }
+  #textDlg textarea { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; }
 </style>
 </head>
 <body>
@@ -128,7 +123,15 @@
     <button class="icon" id="zoomIn">+</button>
   </div>
 
+  <div class="group">
+    <label class="check"><input type="checkbox" id="gridChk"> Raster</label>
+    <label class="check" title="Rastet an Raster, Rändern und anderen Teilen ein"><input type="checkbox" id="snapChk"> Einrasten</label>
+  </div>
+
   <div class="spacer"></div>
+  <button id="openBtn" title="Projekt öffnen (Strg+O)">Öffnen</button>
+  <button id="saveBtn" title="Projekt speichern (Strg+S)">Speichern</button>
+  <input type="file" id="projInput" accept=".vdrop,.json,application/json" hidden>
   <button id="settingsBtn">⚙ Einstellungen</button>
   <button class="primary" id="exportBtn">SVG exportieren</button>
 </header>
@@ -136,99 +139,72 @@
 <main>
   <aside id="libraryPanel">
     <h2>Bibliothek</h2>
-    <button id="wizBtn" class="primary" style="width:100%;margin-bottom:6px">🖼 Bild in Vektor umwandeln</button>
-    <button id="importBtn" style="width:100%">+ SVG-Dateien laden</button>
+    <input type="search" id="libSearch" placeholder="Suchen …">
+    <select id="libCat" style="margin-top:6px"></select>
+    <div id="libTools">
+      <button id="wizBtn" class="primary">🖼 Bild in Vektor umwandeln</button>
+      <button id="textBtn">𝐓 Text einfügen</button>
+      <button id="importBtn">+ SVG-Dateien laden</button>
+      <div class="row2"><button id="exportLibBtn">Bib. speichern</button><button id="importLibBtn">Bib. öffnen</button></div>
+    </div>
     <input type="file" id="fileInput" accept=".svg,image/svg+xml" multiple hidden>
-    <button id="exportLibBtn" style="width:100%;margin-top:6px">Bibliothek speichern</button>
-    <button id="importLibBtn" style="width:100%;margin-top:6px">Bibliothek öffnen</button>
     <input type="file" id="libInput" accept=".json,application/json" hidden>
     <div class="hint">Teile auf die Arbeitsfläche ziehen – oder doppelklicken.</div>
     <div id="library"></div>
   </aside>
 
-  <div id="stage">
-    <div id="canvasWrap"><svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg></div>
-    <div class="empty-hint" id="emptyHint"><b>Arbeitsfläche ist leer</b><br>Ziehe ein Teil aus der Bibliothek hierher.</div>
+  <div id="center">
+    <div id="stage">
+      <div id="canvasWrap"><svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <div class="empty-hint" id="emptyHint"><b>Arbeitsfläche ist leer</b><br>Ziehe ein Teil aus der Bibliothek hierher.</div>
+    </div>
+    <div id="status"></div>
   </div>
 
   <aside id="propsPanel">
     <h2>Eigenschaften</h2>
-    <div id="propsEmpty" class="hint">Wähle ein Objekt aus. Mehrere Objekte: Umschalt-Taste gedrückt halten oder Strg+A.</div>
+    <div id="propsEmpty" class="hint">Wähle ein Objekt aus – oder ziehe mit der Maus einen Rahmen um mehrere. Mit Umschalt-Taste mehrere anklicken, Strg+A wählt alles.</div>
     <div id="props" hidden>
       <div class="field"><label>X (mm)</label><input type="number" id="pX" step="0.5"></div>
       <div class="field"><label>Y (mm)</label><input type="number" id="pY" step="0.5"></div>
       <div class="field"><label>Breite (mm)</label><input type="number" id="pW" step="0.5" min="1"></div>
       <div class="field"><label>Höhe (mm)</label><input type="number" id="pH" step="0.5" min="1"></div>
+      <div class="field"><label>Drehung (°)</label><input type="number" id="pR" step="1"></div>
       <label class="check"><input type="checkbox" id="pLock" checked> Seitenverhältnis halten</label>
+
+      <div class="sect">Darstellung</div>
+      <div class="seg" id="modeSeg">
+        <button data-mode="fill" title="Gefüllte Fläche – wird vom Laser graviert">Gefüllt (Gravur)</button>
+        <button data-mode="outline" title="Nur die Kontur als dünne rote Linie – wird vom Laser geschnitten">Umriss (Schnitt)</button>
+      </div>
+
+      <div class="sect">Drehen &amp; Spiegeln</div>
+      <div class="row4">
+        <button id="rotL" title="90° links (Umschalt+R)">⟲</button>
+        <button id="rotR" title="90° rechts (R)">⟳</button>
+        <button id="flipH" title="Waagerecht spiegeln">⇋</button>
+        <button id="flipV" title="Senkrecht spiegeln">⇅</button>
+      </div>
+
+      <div class="sect">Anordnen</div>
       <div class="row2">
         <button id="dupBtn">Duplizieren</button>
         <button id="delBtn">Löschen</button>
         <button id="frontBtn">Nach vorne</button>
         <button id="backBtn">Nach hinten</button>
+        <button id="grpBtn" title="Strg+G">Gruppieren</button>
+        <button id="ungrpBtn" title="Strg+Umschalt+G">Gruppe lösen</button>
       </div>
     </div>
   </aside>
 </main>
 
-
-<dialog id="wizDlg">
-  <div class="wz-head">
-    <h3>Bild in Vektor umwandeln</h3>
-    <span class="wz-step" id="wzs1">1 · Bild</span><span class="wz-step" id="wzs2">2 · Anpassen</span><span class="wz-step" id="wzs3">3 · Fertig</span>
-    <span class="spacer"></span><button id="wzClose">Schließen</button>
-  </div>
-  <div class="wz-body">
-    <div id="wz1">
-      <div class="dropzone" id="wzDrop">
-        <div class="big">Screenshot einfügen mit <span class="kbd">Strg</span> + <span class="kbd">V</span></div>
-        <div>oder ein Bild hierher ziehen</div>
-        <div><button class="primary" id="wzFile">Bilddatei wählen …</button> <button id="wzPaste">Aus Zwischenablage einfügen</button></div>
-        <div style="max-width:520px">Am besten: dunkles oder farbiges Design auf einfarbigem, hellem Hintergrund. Das Design wird automatisch erkannt.</div>
-        <input type="file" id="wzFileInput" accept="image/*" hidden>
-      </div>
-    </div>
-    <div id="wz2" hidden>
-      <div class="wz-cols">
-        <div class="pane"><h4>Dein Bild – Ausschnitt mit der Maus aufziehen</h4><div class="view"><canvas id="wzCrop"></canvas></div></div>
-        <div class="pane"><h4>Erkanntes Design</h4><div class="view"><svg id="wzPrev" xmlns="http://www.w3.org/2000/svg"></svg></div></div>
-        <div>
-          <div class="ctl"><label>Empfindlichkeit <span id="vSens"></span></label><input type="range" id="oSens" min="5" max="95" value="70"><small>Mehr, wenn Teile fehlen. Weniger, wenn Schatten oder Rauschen mitkommen.</small></div>
-          <div class="ctl"><label>Glätten <span id="vBlur"></span></label><input type="range" id="oBlur" min="0" max="3" step="1" value="1"><small>Macht Kanten weicher.</small></div>
-          <div class="ctl"><label>Vereinfachen <span id="vTol"></span></label><input type="range" id="oTol" min="0" max="5" step="0.1" value="1.2"><small>Weniger Punkte, gerader.</small></div>
-          <div class="ctl"><label>Flecken entfernen <span id="vNoise"></span></label><input type="range" id="oNoise" min="0" max="100" value="5"><small>Entfernt winzige Punkte.</small></div>
-          <details class="ctl" id="wzAdv" open><summary style="cursor:pointer;font-weight:600;margin-bottom:8px">Bild verbessern</summary>
-            <div class="ctl"><label>Helligkeit <span id="vBright"></span></label><input type="range" id="oBright" min="-100" max="100" value="0"><small>Heller: schwache Linien und Schatten verschwinden.</small></div>
-            <div class="ctl"><label>Kontrast <span id="vContrast"></span></label><input type="range" id="oContrast" min="-100" max="100" value="0"><small>Stärker: Design hebt sich klarer ab.</small></div>
-            <div class="ctl"><label>Schärfen <span id="vSharp"></span></label><input type="range" id="oSharp" min="0" max="5" value="0"><small>Für unscharfe Screenshots.</small></div>
-            <label class="check" style="margin:0 0 6px"><input type="checkbox" id="oInvert"> Umkehren (Design ist der Hintergrund)</label>
-          </details>
-          <div class="row2"><button id="wzResetCrop">Ausschnitt zurücksetzen</button><button id="wzResetOpts">Regler zurücksetzen</button></div>
-          <div id="wzInfo"></div>
-        </div>
-      </div>
-    </div>
-    <div id="wz3" hidden>
-      <div class="wz-final">
-        <div class="pane"><h4>Ergebnis</h4><div class="view"><svg id="wzFinal" xmlns="http://www.w3.org/2000/svg"></svg></div></div>
-        <div>
-          <label for="wzName"><b>Name in der Bibliothek</b></label>
-          <input type="text" id="wzName" maxlength="40">
-          <div class="stack">
-            <button class="primary" id="wzAddPlace">Zur Bibliothek und auf die Arbeitsfläche legen</button>
-            <button id="wzAdd">Nur zur Bibliothek hinzufügen</button>
-          </div>
-          <p class="hint">Das Design wird einfarbig schwarz übernommen (gefüllte Fläche) und lässt sich danach wie jedes andere Teil skalieren und ausrichten.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="wz-foot"><button id="wzBack">← Zurück</button><button class="primary" id="wzNext">Weiter →</button></div>
-</dialog>
 <dialog id="settingsDlg">
   <h3>Einstellungen</h3>
   <p>Lege die maximale Größe der Arbeitsfläche fest. Größer kann niemand das Design anlegen.</p>
   <div class="field"><label>Max. Breite (mm)</label><input type="number" id="sMaxW" min="10" step="10"></div>
   <div class="field"><label>Max. Höhe (mm)</label><input type="number" id="sMaxH" min="10" step="10"></div>
+  <div class="field"><label>Rastergröße (mm)</label><input type="number" id="sGrid" min="0.5" step="0.5"></div>
   <div id="updBox" hidden style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)">
     <div class="field" style="grid-template-columns:1fr auto"><label>Version <b id="verTxt"></b></label><button id="updBtn">Nach Updates suchen</button></div>
     <div class="hint" id="updHint" style="margin:0">Updates werden automatisch beim Start gesucht.</div>
@@ -238,622 +214,35 @@
     <button class="primary" id="sSave">Speichern</button>
   </div>
 </dialog>
+
+<dialog id="libDlg">
+  <h3>Teil bearbeiten</h3>
+  <div class="field" style="grid-template-columns:90px 1fr"><label>Name</label><input type="text" id="leName" maxlength="40"></div>
+  <div class="field" style="grid-template-columns:90px 1fr"><label>Ordner</label><input type="text" id="leCat" list="catList" maxlength="30"></div>
+  <datalist id="catList"></datalist>
+  <div class="buttons">
+    <button id="leCancel">Abbrechen</button>
+    <button class="primary" id="leSave">Speichern</button>
+  </div>
+</dialog>
+
+<dialog id="textDlg">
+  <h3>Text einfügen</h3>
+  <p>Der Text wird in Vektorlinien umgewandelt und wie jedes andere Teil behandelt.</p>
+  <textarea id="txtIn" rows="2" maxlength="120" placeholder="Dein Text …"></textarea>
+  <select id="txtFont" style="margin-top:8px"></select>
+  <svg id="textPrev" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="buttons">
+    <button id="txtCancel">Abbrechen</button>
+    <button class="primary" id="txtAdd">Auf die Arbeitsfläche legen</button>
+  </div>
+</dialog>
 <div id="toast"></div>
 
-<script>
-(() => {
-'use strict';
-const NS = 'http://www.w3.org/2000/svg';
-const $ = (id) => document.getElementById(id);
-const STORE = 'vectordrop.v1';
-
-/* ---------- Standard-Bibliothek ---------- */
-const DEFAULT_LIB = [
-  { name: 'Kreis',    vb: [0,0,100,100], inner: '<circle cx="50" cy="50" r="48" fill="#000"/>' },
-  { name: 'Quadrat',  vb: [0,0,100,100], inner: '<rect x="2" y="2" width="96" height="96" fill="#000"/>' },
-  { name: 'Dreieck',  vb: [0,0,100,100], inner: '<polygon points="50,3 98,97 2,97" fill="#000"/>' },
-  { name: 'Haus',     vb: [0,0,100,100], inner: '<path fill="#000" fill-rule="evenodd" d="M50 4 L97 46 L84 46 L84 96 L16 96 L16 46 L3 46 Z M42 96 L42 66 L58 66 L58 96 Z"/>' },
-  { name: 'Stern',    vb: [0,0,100,100], inner: '<polygon points="50,3 62,36 97,38 70,60 80,95 50,75 20,95 30,60 3,38 38,36" fill="#000"/>' },
-  { name: 'Herz',     vb: [0,0,100,100], inner: '<path d="M50 92 C8 60 2 34 20 18 C35 6 48 16 50 28 C52 16 65 6 80 18 C98 34 92 60 50 92Z" fill="#000"/>' },
-];
-
-/* ---------- Zustand ---------- */
-const S = {
-  maxW: 300, maxH: 300,     // aus den Einstellungen (mm)
-  W: 200, H: 150,           // aktuelle Arbeitsfläche (mm)
-  lib: [],                  // {id,name,vb,inner}
-  items: [],                // {id,libId,x,y,w,h}
-  sel: [],
-  zoom: 3,                  // Pixel pro mm
-};
-let undoStack = [];
-let uid = 1;
-const newId = (p) => p + (Date.now().toString(36)) + (uid++);
-
-function save() {
-  try { localStorage.setItem(STORE, JSON.stringify({ maxW:S.maxW, maxH:S.maxH, W:S.W, H:S.H, lib:S.lib, items:S.items })); } catch (e) {}
-}
-function load() {
-  try {
-    const d = JSON.parse(localStorage.getItem(STORE) || 'null');
-    if (d) { Object.assign(S, { maxW:d.maxW, maxH:d.maxH, W:d.W, H:d.H, lib:d.lib, items:d.items }); return; }
-  } catch (e) {}
-  S.lib = DEFAULT_LIB.map((l) => ({ ...l, id: newId('l') }));
-}
-
-/* ---------- Hilfsfunktionen ---------- */
-const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
-const round = (v) => Math.round(v * 100) / 100;
-const libOf = (it) => S.lib.find((l) => l.id === it.libId);
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
-function snapshot() { undoStack.push(JSON.stringify({ items: S.items, W: S.W, H: S.H })); if (undoStack.length > 100) undoStack.shift(); }
-function undo() {
-  const s = undoStack.pop(); if (!s) return;
-  const d = JSON.parse(s); S.items = d.items; S.W = d.W; S.H = d.H;
-  S.sel = S.sel.filter((id) => S.items.some((i) => i.id === id));
-  render(); save();
-}
-
-/* IDs innerhalb eines Teils eindeutig machen (Verläufe etc.), damit Kopien sich nicht stören */
-function uniq(inner, prefix) {
-  const ids = [...inner.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
-  let out = inner;
-  ids.forEach((id) => {
-    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    out = out.replace(new RegExp('id="' + esc + '"', 'g'), 'id="' + prefix + id + '"')
-             .replace(new RegExp('url\\(#' + esc + '\\)', 'g'), 'url(#' + prefix + id + ')')
-             .replace(new RegExp('href="#' + esc + '"', 'g'), 'href="#' + prefix + id + '"');
-  });
-  return out;
-}
-
-/* ---------- SVG importieren ---------- */
-function parseSvgText(text, fileName) {
-  const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
-  const root = doc.documentElement;
-  if (!root || root.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) return null;
-  root.querySelectorAll('script,foreignObject').forEach((n) => n.remove());
-  root.querySelectorAll('*').forEach((el) => {
-    [...el.attributes].forEach((a) => {
-      const n = a.name.toLowerCase(), v = a.value.trim().toLowerCase();
-      if (n.startsWith('on')) el.removeAttribute(a.name);
-      else if ((n === 'href' || n === 'xlink:href') && !(v.startsWith('#') || v.startsWith('data:image/'))) el.removeAttribute(a.name);
-    });
-  });
-  let vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
-  if (vb.length !== 4 || vb.some((n) => !isFinite(n)) || vb[2] <= 0 || vb[3] <= 0) {
-    const w = parseFloat(root.getAttribute('width')) || 100, h = parseFloat(root.getAttribute('height')) || 100;
-    vb = [0, 0, w, h];
-  }
-  const inner = [...root.childNodes].map((n) => new XMLSerializer().serializeToString(n)).join('');
-  return { id: newId('l'), name: fileName.replace(/\.svg$/i, ''), vb, inner };
-}
-async function importFiles(files) {
-  let ok = 0;
-  for (const f of files) {
-    const lib = parseSvgText(await f.text(), f.name);
-    if (lib) { S.lib.push(lib); ok++; } else toast('„' + f.name + '“ ist keine gültige SVG-Datei.');
-  }
-  if (ok) { renderLibrary(); save(); toast(ok + ' Teil(e) zur Bibliothek hinzugefügt.'); }
-}
-
-/* ---------- Rendering ---------- */
-function bounds(items) {
-  const x1 = Math.min(...items.map((i) => i.x)), y1 = Math.min(...items.map((i) => i.y));
-  const x2 = Math.max(...items.map((i) => i.x + i.w)), y2 = Math.max(...items.map((i) => i.y + i.h));
-  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
-}
-const selItems = () => S.items.filter((i) => S.sel.includes(i.id));
-
-function renderLibrary() {
-  const box = $('library'); box.innerHTML = '';
-  S.lib.forEach((l) => {
-    const c = document.createElement('div'); c.className = 'card'; c.draggable = true; c.title = l.name;
-    const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('viewBox', l.vb.join(' '));
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    svg.innerHTML = uniq(l.inner, 'th' + l.id + '_');
-    const n = document.createElement('div'); n.className = 'name'; n.textContent = l.name;
-    const d = document.createElement('button'); d.className = 'del'; d.textContent = '×'; d.title = 'Aus Bibliothek entfernen';
-    d.onclick = (e) => { e.stopPropagation(); if (confirm('„' + l.name + '“ aus der Bibliothek entfernen?\nBereits platzierte Exemplare auf der Arbeitsfläche werden ebenfalls entfernt.')) { snapshot(); S.lib = S.lib.filter((x) => x.id !== l.id); S.items = S.items.filter((i) => i.libId !== l.id); S.sel = []; renderLibrary(); render(); save(); } };
-    c.append(svg, n, d);
-    c.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/x-vectordrop', l.id); e.dataTransfer.effectAllowed = 'copy'; });
-    c.addEventListener('dblclick', () => addItem(l.id, S.W / 2, S.H / 2));
-    box.append(c);
-  });
-}
-
-function render() {
-  const cv = $('canvas'), z = S.zoom;
-  cv.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`);
-  cv.setAttribute('width', S.W * z); cv.setAttribute('height', S.H * z);
-  let html = '';
-  S.items.forEach((it) => {
-    const l = libOf(it); if (!l) return;
-    html += `<svg data-id="${it.id}" x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" viewBox="${l.vb.join(' ')}" preserveAspectRatio="none" overflow="hidden" style="cursor:move">${uniq(l.inner, it.id + '_')}</svg>`;
-  });
-  const sel = selItems();
-  if (sel.length) {
-    const b = bounds(sel), px = 1 / z, hs = 9 * px;
-    html += `<g style="pointer-events:none">`;
-    sel.forEach((i) => { html += `<rect x="${i.x}" y="${i.y}" width="${i.w}" height="${i.h}" fill="none" stroke="#2563eb" stroke-width="${1.5*px}" ${sel.length>1?`stroke-dasharray="${4*px} ${3*px}"`:''}/>`; });
-    if (sel.length > 1) html += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#2563eb" stroke-width="${1.5*px}"/>`;
-    html += `</g>`;
-    if (sel.length === 1) {
-      const i = sel[0];
-      [['nw',i.x,i.y],['n',i.x+i.w/2,i.y],['ne',i.x+i.w,i.y],['e',i.x+i.w,i.y+i.h/2],['se',i.x+i.w,i.y+i.h],['s',i.x+i.w/2,i.y+i.h],['sw',i.x,i.y+i.h],['w',i.x,i.y+i.h/2]]
-        .forEach(([k,hx,hy]) => { html += `<rect data-h="${k}" x="${hx-hs/2}" y="${hy-hs/2}" width="${hs}" height="${hs}" fill="#fff" stroke="#2563eb" stroke-width="${1.5*px}" style="cursor:${k}-resize"/>`; });
-    }
-  }
-  cv.innerHTML = html;
-  $('emptyHint').style.display = S.items.length ? 'none' : '';
-  $('wsW').value = S.W; $('wsH').value = S.H;
-  renderProps();
-  $('undoBtn').disabled = !undoStack.length;
-  document.querySelectorAll('[data-align]').forEach((b) => {
-    const a = b.dataset.align, n = S.sel.length;
-    b.disabled = a.startsWith('dist') ? n < 3 : n < 1;
-  });
-}
-
-function renderProps() {
-  const sel = selItems();
-  $('props').hidden = sel.length === 0; $('propsEmpty').hidden = sel.length !== 0;
-  if (!sel.length) return;
-  const b = sel.length === 1 ? sel[0] : bounds(sel);
-  $('pX').value = round(b.x); $('pY').value = round(b.y); $('pW').value = round(b.w); $('pH').value = round(b.h);
-  const single = sel.length === 1;
-  ['pW','pH','pLock'].forEach((id) => $(id).disabled = !single);
-}
-
-/* ---------- Teile hinzufügen ---------- */
-function addItem(libId, cx, cy) {
-  const l = S.lib.find((x) => x.id === libId); if (!l) return;
-  snapshot();
-  const target = Math.min(S.W, S.H) * 0.3, ratio = l.vb[2] / l.vb[3];
-  let w = ratio >= 1 ? target : target * ratio, h = ratio >= 1 ? target / ratio : target;
-  const it = { id: newId('i'), libId, w: round(w), h: round(h), x: 0, y: 0 };
-  it.x = round(cx - it.w / 2); it.y = round(cy - it.h / 2);
-  S.items.push(it); S.sel = [it.id]; render(); save();
-}
-
-/* ---------- Maus / Zeiger ---------- */
-const cv = $('canvas');
-function pt(e) {
-  const p = cv.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
-  const m = p.matrixTransform(cv.getScreenCTM().inverse()); return { x: m.x, y: m.y };
-}
-let drag = null;
-
-cv.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0) return;
-  const p = pt(e);
-  const hEl = e.target.closest('[data-h]');
-  if (hEl) {
-    snapshot();
-    const it = selItems()[0];
-    drag = { mode: 'resize', h: hEl.dataset.h, start: p, orig: { ...it }, id: it.id };
-  } else {
-    const el = e.target.closest('svg[data-id]');
-    if (!el || el === cv) { S.sel = []; drag = null; render(); return; }
-    const id = el.dataset.id;
-    if (e.shiftKey) { S.sel = S.sel.includes(id) ? S.sel.filter((x) => x !== id) : [...S.sel, id]; }
-    else if (!S.sel.includes(id)) S.sel = [id];
-    render();
-    if (!S.sel.includes(id)) return;
-    snapshot();
-    drag = { mode: 'move', start: p, origs: selItems().map((i) => ({ id: i.id, x: i.x, y: i.y })), moved: false };
-  }
-  cv.setPointerCapture(e.pointerId);
-});
-cv.addEventListener('pointermove', (e) => {
-  if (!drag) return;
-  const p = pt(e), dx = p.x - drag.start.x, dy = p.y - drag.start.y;
-  if (drag.mode === 'move') {
-    drag.moved = true;
-    drag.origs.forEach((o) => { const it = S.items.find((i) => i.id === o.id); it.x = round(o.x + dx); it.y = round(o.y + dy); });
-  } else {
-    const it = S.items.find((i) => i.id === drag.id), o = drag.orig, k = drag.h, min = 2;
-    let x1 = o.x, y1 = o.y, x2 = o.x + o.w, y2 = o.y + o.h;
-    if (k.includes('w')) x1 = Math.min(o.x + dx, x2 - min);
-    if (k.includes('e')) x2 = Math.max(o.x + o.w + dx, x1 + min);
-    if (k.includes('n')) y1 = Math.min(o.y + dy, y2 - min);
-    if (k.includes('s')) y2 = Math.max(o.y + o.h + dy, y1 + min);
-    const keep = $('pLock').checked && k.length === 2;      // Ecken behalten das Seitenverhältnis
-    if (keep) {
-      const r = o.w / o.h; let w = x2 - x1, h = y2 - y1;
-      if (w / h > r) w = h * r; else h = w / r;
-      w = Math.max(w, min); h = Math.max(h, min);
-      if (k.includes('w')) x1 = o.x + o.w - w; else x2 = x1 + w;
-      if (k.includes('n')) y1 = o.y + o.h - h; else y2 = y1 + h;
-    }
-    it.x = round(x1); it.y = round(y1); it.w = round(x2 - x1); it.h = round(y2 - y1);
-  }
-  render();
-});
-const endDrag = () => { if (!drag) return; if (drag.mode === 'move' && !drag.moved) undoStack.pop(); drag = null; render(); save(); };
-cv.addEventListener('pointerup', endDrag);
-cv.addEventListener('pointercancel', endDrag);
-
-/* Drag & Drop aus der Bibliothek */
-const stage = $('stage');
-stage.addEventListener('dragover', (e) => { if ([...e.dataTransfer.types].includes('text/x-vectordrop')) { e.preventDefault(); stage.classList.add('dropping'); } });
-stage.addEventListener('dragleave', () => stage.classList.remove('dropping'));
-stage.addEventListener('drop', (e) => {
-  stage.classList.remove('dropping');
-  const id = e.dataTransfer.getData('text/x-vectordrop'); if (!id) return;
-  e.preventDefault();
-  const p = pt(e);
-  addItem(id, clamp(p.x, 0, S.W), clamp(p.y, 0, S.H));
-});
-
-/* ---------- Eigenschaften ---------- */
-function applyProps(which) {
-  const sel = selItems(); if (!sel.length) return;
-  snapshot();
-  const x = parseFloat($('pX').value), y = parseFloat($('pY').value);
-  if (sel.length > 1) {
-    const b = bounds(sel);
-    const dx = isFinite(x) ? x - b.x : 0, dy = isFinite(y) ? y - b.y : 0;
-    sel.forEach((i) => { i.x = round(i.x + dx); i.y = round(i.y + dy); });
-  } else {
-    const it = sel[0], r = it.w / it.h;
-    if (isFinite(x)) it.x = x; if (isFinite(y)) it.y = y;
-    let w = parseFloat($('pW').value), h = parseFloat($('pH').value);
-    if (which === 'pW' && w > 0) { it.w = w; if ($('pLock').checked) it.h = round(w / r); }
-    if (which === 'pH' && h > 0) { it.h = h; if ($('pLock').checked) it.w = round(h * r); }
-  }
-  render(); save();
-}
-['pX','pY','pW','pH'].forEach((id) => $(id).addEventListener('change', () => applyProps(id)));
-
-$('dupBtn').onclick = duplicate;
-function duplicate() {
-  const sel = selItems(); if (!sel.length) return; snapshot();
-  const copies = sel.map((i) => ({ ...i, id: newId('i'), x: round(i.x + 5), y: round(i.y + 5) }));
-  S.items.push(...copies); S.sel = copies.map((c) => c.id); render(); save();
-}
-$('delBtn').onclick = removeSel;
-function removeSel() { if (!S.sel.length) return; snapshot(); S.items = S.items.filter((i) => !S.sel.includes(i.id)); S.sel = []; render(); save(); }
-$('frontBtn').onclick = () => { snapshot(); const s = selItems(); S.items = [...S.items.filter((i) => !s.includes(i)), ...s]; render(); save(); };
-$('backBtn').onclick = () => { snapshot(); const s = selItems(); S.items = [...s, ...S.items.filter((i) => !s.includes(i))]; render(); save(); };
-
-/* ---------- Ausrichten ---------- */
-document.querySelectorAll('[data-align]').forEach((btn) => btn.addEventListener('click', () => {
-  const sel = selItems(); if (!sel.length) return;
-  const a = btn.dataset.align;
-  snapshot();
-  if (a === 'distH' || a === 'distV') {
-    const hz = a === 'distH', pos = hz ? 'x' : 'y', size = hz ? 'w' : 'h';
-    const s = [...sel].sort((p, q) => p[pos] - q[pos]);
-    const start = s[0][pos], end = s[s.length-1][pos] + s[s.length-1][size];
-    const total = s.reduce((t, i) => t + i[size], 0), gap = (end - start - total) / (s.length - 1);
-    let cur = start; s.forEach((i) => { i[pos] = round(cur); cur += i[size] + gap; });
-  } else {
-    const ref = sel.length > 1 ? bounds(sel) : { x: 0, y: 0, w: S.W, h: S.H };
-    sel.forEach((i) => {
-      if (a === 'left') i.x = ref.x;
-      if (a === 'right') i.x = round(ref.x + ref.w - i.w);
-      if (a === 'hcenter') i.x = round(ref.x + (ref.w - i.w) / 2);
-      if (a === 'top') i.y = ref.y;
-      if (a === 'bottom') i.y = round(ref.y + ref.h - i.h);
-      if (a === 'vmiddle') i.y = round(ref.y + (ref.h - i.h) / 2);
-    });
-  }
-  render(); save();
-}));
-
-/* ---------- Arbeitsfläche, Zoom, Einstellungen ---------- */
-function setWorkspace(w, h) {
-  const nw = clamp(Math.round(w) || S.W, 10, S.maxW), nh = clamp(Math.round(h) || S.H, 10, S.maxH);
-  if (nw !== Math.round(w) || nh !== Math.round(h)) toast('Maximale Größe: ' + S.maxW + ' × ' + S.maxH + ' mm');
-  snapshot(); S.W = nw; S.H = nh; fit(); save();
-}
-$('wsW').addEventListener('change', () => setWorkspace(parseFloat($('wsW').value), S.H));
-$('wsH').addEventListener('change', () => setWorkspace(S.W, parseFloat($('wsH').value)));
-function fit() {
-  const st = $('stage');
-  S.zoom = Math.max(0.5, Math.min((st.clientWidth - 60) / S.W, (st.clientHeight - 60) / S.H));
-  render();
-}
-$('zoomIn').onclick = () => { S.zoom = Math.min(S.zoom * 1.25, 40); render(); };
-$('zoomOut').onclick = () => { S.zoom = Math.max(S.zoom / 1.25, 0.3); render(); };
-$('zoomFit').onclick = fit;
-window.addEventListener('resize', fit);
-
-$('settingsBtn').onclick = () => { $('sMaxW').value = S.maxW; $('sMaxH').value = S.maxH; $('settingsDlg').showModal(); };
-$('sCancel').onclick = () => $('settingsDlg').close();
-$('sSave').onclick = () => {
-  const w = parseInt($('sMaxW').value, 10), h = parseInt($('sMaxH').value, 10);
-  if (!(w >= 10 && h >= 10)) { toast('Bitte gültige Werte (mindestens 10 mm) eingeben.'); return; }
-  S.maxW = w; S.maxH = h;
-  S.W = Math.min(S.W, w); S.H = Math.min(S.H, h);
-  $('settingsDlg').close(); fit(); save(); toast('Einstellungen gespeichert.');
-};
-
-/* ---------- Export ---------- */
-function download(name, text, type) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type }));
-  a.download = name; document.body.append(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
-function buildSvg() {
-  const parts = S.items.map((it) => {
-    const l = libOf(it); if (!l) return '';
-    const sx = it.w / l.vb[2], sy = it.h / l.vb[3];
-    const tx = it.x - l.vb[0] * sx, ty = it.y - l.vb[1] * sy;
-    return `  <g transform="matrix(${+sx.toFixed(6)} 0 0 ${+sy.toFixed(6)} ${+tx.toFixed(4)} ${+ty.toFixed(4)})">${uniq(l.inner, it.id + '_')}</g>`;
-  }).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="${NS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${S.W}mm" height="${S.H}mm" viewBox="0 0 ${S.W} ${S.H}">\n${parts}\n</svg>\n`;
-}
-$('exportBtn').onclick = () => {
-  if (!S.items.length) { toast('Die Arbeitsfläche ist noch leer.'); return; }
-  download('design.svg', buildSvg(), 'image/svg+xml'); toast('design.svg exportiert.');
-};
-window.__buildSvg = buildSvg; // für Tests
-
-/* Bibliothek als Datei teilen */
-$('exportLibBtn').onclick = () => download('bibliothek.json', JSON.stringify({ vectordropLibrary: 1, lib: S.lib }, null, 1), 'application/json');
-$('importLibBtn').onclick = () => $('libInput').click();
-$('libInput').addEventListener('change', async (e) => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  try {
-    const d = JSON.parse(await f.text());
-    if (!d.vectordropLibrary || !Array.isArray(d.lib)) throw 0;
-    const known = new Set(S.lib.map((l) => l.id));
-    const add = d.lib.filter((l) => !known.has(l.id) && l.inner && l.vb && l.vb.length === 4)
-      .map((l) => { const t = parseSvgText(`<svg xmlns="${NS}" viewBox="${l.vb.join(' ')}">${l.inner}</svg>`, l.name || 'Teil'); return t && { ...t, id: l.id, name: l.name || 'Teil' }; }).filter(Boolean);
-    S.lib.push(...add); renderLibrary(); save(); toast(add.length + ' Teil(e) hinzugefügt.');
-  } catch (err) { toast('Das ist keine gültige Bibliotheksdatei.'); }
-});
-
-$('importBtn').onclick = () => $('fileInput').click();
-$('fileInput').addEventListener('change', (e) => { importFiles([...e.target.files]); e.target.value = ''; });
-// SVG-Dateien direkt auf die Bibliothek ziehen
-const lp = $('libraryPanel');
-lp.addEventListener('dragover', (e) => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
-lp.addEventListener('drop', (e) => { if (e.dataTransfer.files.length) { e.preventDefault(); importFiles([...e.dataTransfer.files].filter((f) => /\.svg$/i.test(f.name))); } });
-
-/* ---------- Tastatur ---------- */
-$('undoBtn').onclick = undo;
-document.addEventListener('keydown', (e) => {
-  if (/INPUT|TEXTAREA/.test(document.activeElement.tagName) || document.querySelector('dialog[open]')) return;
-  const ctrl = e.ctrlKey || e.metaKey;
-  if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
-  else if (ctrl && e.key.toLowerCase() === 'a') { e.preventDefault(); S.sel = S.items.map((i) => i.id); render(); }
-  else if (ctrl && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicate(); }
-  else if (e.key === 'Delete' || e.key === 'Backspace') { removeSel(); }
-  else if (e.key === 'Escape') { S.sel = []; render(); }
-  else if (e.key.startsWith('Arrow') && S.sel.length) {
-    e.preventDefault(); snapshot();
-    const st = e.shiftKey ? 5 : 1;
-    selItems().forEach((i) => { if (e.key === 'ArrowLeft') i.x -= st; if (e.key === 'ArrowRight') i.x += st; if (e.key === 'ArrowUp') i.y -= st; if (e.key === 'ArrowDown') i.y += st; });
-    render(); save();
-  }
-});
-
-/* ---------- Bild-zu-Vektor-Assistent ---------- */
-const TR = { work: null, crop: null, bg: [255,255,255], res: null, step: 1, timer: 0 };
-const wdlg = $('wizDlg');
-
-function wizStep(n) {
-  TR.step = n;
-  [1,2,3].forEach((i) => { $('wz'+i).hidden = i !== n; $('wzs'+i).classList.toggle('on', i === n); $('wzs'+i).classList.toggle('done', i < n); });
-  $('wzBack').style.visibility = n === 1 ? 'hidden' : 'visible';
-  $('wzNext').style.display = n === 3 ? 'none' : '';
-  $('wzNext').disabled = n === 1 || (n === 2 && !TR.res);
-  if (n === 2) { drawCrop(); runTrace(); }
-  if (n === 3) renderFinal();
-}
-function openWizard() { TR.work = null; TR.res = null; if (!wdlg.open) wdlg.showModal(); wizStep(1); }
-
-function estimateBg(ctx, w, h) {
-  const d = ctx.getImageData(0, 0, w, h).data, r = [], g = [], b = [];
-  const add = (x, y) => { const i = (y * w + x) * 4; r.push(d[i]); g.push(d[i+1]); b.push(d[i+2]); };
-  for (let i = 0; i < w; i += 3) { add(i, 0); add(i, h - 1); }
-  for (let j = 0; j < h; j += 3) { add(0, j); add(w - 1, j); }
-  const med = (a) => a.sort((p, q) => p - q)[a.length >> 1];
-  return [med(r), med(g), med(b)];
-}
-async function loadBlob(blob) {
-  let bmp;
-  try { bmp = await createImageBitmap(blob); } catch (e) { toast('Das Bild konnte nicht gelesen werden.'); return; }
-  const sc = Math.min(1, 1000 / Math.max(bmp.width, bmp.height));
-  const c = document.createElement('canvas');
-  c.width = Math.max(1, Math.round(bmp.width * sc)); c.height = Math.max(1, Math.round(bmp.height * sc));
-  const x = c.getContext('2d', { willReadFrequently: true });
-  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bmp, 0, 0, c.width, c.height);
-  TR.work = c; TR.crop = { x: 0, y: 0, w: c.width, h: c.height }; TR.bg = estimateBg(x, c.width, c.height);
-  if (!wdlg.open) wdlg.showModal();
-  wizStep(2);
-}
-
-/* Ausschnitt */
-const cropCv = $('wzCrop');
-function drawCrop() {
-  if (!TR.work) return;
-  cropCv.width = TR.work.width; cropCv.height = TR.work.height;
-  const x = cropCv.getContext('2d'), c = TR.crop;
-  x.drawImage(TR.work, 0, 0);
-  x.fillStyle = 'rgba(20,30,50,.45)';
-  x.fillRect(0, 0, cropCv.width, c.y); x.fillRect(0, c.y + c.h, cropCv.width, cropCv.height - c.y - c.h);
-  x.fillRect(0, c.y, c.x, c.h); x.fillRect(c.x + c.w, c.y, cropCv.width - c.x - c.w, c.h);
-  x.strokeStyle = '#2563eb'; x.lineWidth = Math.max(2, cropCv.width / 400); x.strokeRect(c.x, c.y, c.w, c.h);
-}
-let cropDrag = null;
-const cpt = (e) => { const r = cropCv.getBoundingClientRect(); return { x: clamp((e.clientX - r.left) * cropCv.width / r.width, 0, cropCv.width), y: clamp((e.clientY - r.top) * cropCv.height / r.height, 0, cropCv.height) }; };
-cropCv.addEventListener('pointerdown', (e) => { cropDrag = cpt(e); cropCv.setPointerCapture(e.pointerId); });
-cropCv.addEventListener('pointermove', (e) => {
-  if (!cropDrag) return;
-  const p = cpt(e), x1 = Math.min(cropDrag.x, p.x), y1 = Math.min(cropDrag.y, p.y);
-  TR.crop = { x: Math.round(x1), y: Math.round(y1), w: Math.max(8, Math.round(Math.abs(p.x - cropDrag.x))), h: Math.max(8, Math.round(Math.abs(p.y - cropDrag.y))) };
-  drawCrop();
-});
-cropCv.addEventListener('pointerup', () => { if (!cropDrag) return; cropDrag = null; const c = TR.crop; if (c.x + c.w > TR.work.width) c.w = TR.work.width - c.x; if (c.y + c.h > TR.work.height) c.h = TR.work.height - c.y; scheduleTrace(); });
-$('wzResetCrop').onclick = () => { TR.crop = { x: 0, y: 0, w: TR.work.width, h: TR.work.height }; drawCrop(); scheduleTrace(); };
-
-/* Kantenerkennung / Vektorisierung */
-function boxBlur(f, w, h) {
-  const t = new Float32Array(f.length), o = new Float32Array(f.length);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; t[i] = (f[x > 0 ? i - 1 : i] + f[i] + f[x < w - 1 ? i + 1 : i]) / 3; }
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; o[i] = (t[y > 0 ? i - w : i] + t[i] + t[y < h - 1 ? i + w : i]) / 3; }
-  return o;
-}
-function perp(p, a, b) {
-  const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
-  if (!l) return Math.hypot(p[0] - a[0], p[1] - a[1]);
-  return Math.abs(dy * (p[0] - a[0]) - dx * (p[1] - a[1])) / Math.sqrt(l);
-}
-function dpLine(p, tol) {
-  const keep = new Uint8Array(p.length); keep[0] = keep[p.length - 1] = 1;
-  const st = [[0, p.length - 1]];
-  while (st.length) {
-    const [a, b] = st.pop(); let md = 0, mi = -1;
-    for (let i = a + 1; i < b; i++) { const d = perp(p[i], p[a], p[b]); if (d > md) { md = d; mi = i; } }
-    if (md > tol && mi >= 0) { keep[mi] = 1; st.push([a, mi], [mi, b]); }
-  }
-  return p.filter((_, i) => keep[i]);
-}
-function simplifyLoop(pts, tol) {
-  if (tol <= 0 || pts.length < 6) return pts;
-  let fi = 0, fd = -1;
-  pts.forEach((q, i) => { const d = (q[0] - pts[0][0]) ** 2 + (q[1] - pts[0][1]) ** 2; if (d > fd) { fd = d; fi = i; } });
-  const a = dpLine(pts.slice(0, fi + 1), tol), b = dpLine(pts.slice(fi).concat([pts[0]]), tol);
-  return a.slice(0, -1).concat(b.slice(0, -1));
-}
-function traceImage(opts) {
-  const c = TR.crop, w = c.w, h = c.h, [br, bg, bb] = TR.bg;
-  const d = TR.work.getContext('2d').getImageData(c.x, c.y, w, h).data;
-  let f = new Float32Array(w * h);
-  for (let i = 0; i < w * h; i++) f[i] = Math.max(Math.abs(d[i*4] - br), Math.abs(d[i*4+1] - bg), Math.abs(d[i*4+2] - bb));
-  if (opts.sharp > 0) { const bl = boxBlur(boxBlur(f, w, h), w, h); for (let i = 0; i < f.length; i++) f[i] = Math.min(255, Math.max(0, f[i] + opts.sharp * 0.8 * (f[i] - bl[i]))); }
-  if (opts.bright || opts.contrast) {
-    const k = opts.contrast >= 0 ? 1 + opts.contrast / 50 : 1 + opts.contrast / 100, off = -opts.bright * 2.55;
-    for (let i = 0; i < f.length; i++) f[i] = Math.min(255, Math.max(0, (f[i] - 128) * k + 128 + off));
-  }
-  if (opts.invert) for (let i = 0; i < f.length; i++) f[i] = 255 - f[i];
-  for (let p = 0; p < opts.blur; p++) f = boxBlur(f, w, h);
-  const PW = w + 2, PH = h + 2, g = new Float32Array(PW * PH);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) g[(y + 1) * PW + x + 1] = f[y * w + x];
-  const thr = opts.thr, adj = new Map(), pos = new Map();
-  const link = (a, b) => { (adj.get(a) || adj.set(a, []).get(a)).push(b); (adj.get(b) || adj.set(b, []).get(b)).push(a); };
-  const tt = (p, q) => (q === p ? 0.5 : clamp((thr - p) / (q - p), 0, 1));
-  const H = (x, y) => { const id = (y * PW + x) * 2; if (!pos.has(id)) pos.set(id, [x + tt(g[y*PW+x], g[y*PW+x+1]), y]); return id; };
-  const V = (x, y) => { const id = (y * PW + x) * 2 + 1; if (!pos.has(id)) pos.set(id, [x, y + tt(g[y*PW+x], g[(y+1)*PW+x])]); return id; };
-  for (let y = 0; y < PH - 1; y++) for (let x = 0; x < PW - 1; x++) {
-    const i = y * PW + x;
-    const idx = (g[i] >= thr ? 1 : 0) | (g[i+1] >= thr ? 2 : 0) | (g[i+PW+1] >= thr ? 4 : 0) | (g[i+PW] >= thr ? 8 : 0);
-    if (idx === 0 || idx === 15) continue;
-    const T = H(x, y), B = H(x, y + 1), L = V(x, y), R = V(x + 1, y);
-    switch (idx) {
-      case 1: case 14: link(L, T); break;
-      case 2: case 13: link(T, R); break;
-      case 3: case 12: link(L, R); break;
-      case 4: case 11: link(R, B); break;
-      case 6: case 9: link(T, B); break;
-      case 7: case 8: link(L, B); break;
-      case 5: link(L, T); link(R, B); break;
-      case 10: link(T, R); link(L, B); break;
-    }
-  }
-  const seen = new Set(), loops = [];
-  for (const start of adj.keys()) {
-    if (seen.has(start)) continue;
-    const loop = []; let prev = -1, cur = start;
-    for (;;) {
-      seen.add(cur); loop.push(pos.get(cur));
-      const nb = adj.get(cur), nxt = nb[0] === prev ? nb[1] : nb[0];
-      if (nxt === undefined || nxt === start || seen.has(nxt)) break;
-      prev = cur; cur = nxt;
-    }
-    loops.push(loop);
-  }
-  const minArea = opts.noise * 8, kept = [];
-  loops.forEach((l) => {
-    let a = 0; for (let i = 0; i < l.length; i++) { const p = l[i], q = l[(i + 1) % l.length]; a += p[0] * q[1] - q[0] * p[1]; }
-    if (Math.abs(a) / 2 < minArea || l.length < 3) return;
-    const sl = simplifyLoop(l, opts.tol); if (sl.length >= 3) kept.push(sl);
-  });
-  if (!kept.length) return null;
-  let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9, dstr = '';
-  kept.forEach((l) => {
-    dstr += 'M' + l.map((p) => { const X = p[0] - 1, Y = p[1] - 1; x1 = Math.min(x1, X); y1 = Math.min(y1, Y); x2 = Math.max(x2, X); y2 = Math.max(y2, Y); return round(X * 10) / 10 + ' ' + round(Y * 10) / 10; }).join('L') + 'Z';
-  });
-  return { d: dstr, vb: [round(x1 - 1), round(y1 - 1), round(x2 - x1 + 2), round(y2 - y1 + 2)], n: kept.length };
-}
-const wzOpts = () => ({ thr: 255 * (1 - $('oSens').value / 100), blur: +$('oBlur').value, tol: +$('oTol').value, noise: +$('oNoise').value, bright: +$('oBright').value, contrast: +$('oContrast').value, sharp: +$('oSharp').value, invert: $('oInvert').checked });
-function runTrace() {
-  $('vSens').textContent = $('oSens').value; $('vBlur').textContent = $('oBlur').value; $('vTol').textContent = $('oTol').value; $('vNoise').textContent = $('oNoise').value; $('vBright').textContent = $('oBright').value; $('vContrast').textContent = $('oContrast').value; $('vSharp').textContent = $('oSharp').value;
-  if (!TR.work) return;
-  TR.res = traceImage(wzOpts());
-  const sv = $('wzPrev');
-  sv.setAttribute('viewBox', `0 0 ${TR.crop.w} ${TR.crop.h}`);
-  sv.style.background = '#fff'; sv.style.border = '1px solid #eee';
-  sv.style.aspectRatio = TR.crop.w + '/' + TR.crop.h; sv.style.height = '100%';
-  sv.innerHTML = TR.res ? `<path d="${TR.res.d}" fill="#000" fill-rule="evenodd"/>` : '';
-  $('wzInfo').textContent = TR.res ? TR.res.n + ' Fläche(n)/Löcher erkannt.' : 'Kein Design erkannt – Empfindlichkeit erhöhen oder anderen Ausschnitt wählen.';
-  $('wzNext').disabled = !TR.res;
-}
-function scheduleTrace() { clearTimeout(TR.timer); TR.timer = setTimeout(runTrace, 90); }
-['oSens','oBlur','oTol','oNoise','oBright','oContrast','oSharp','oInvert'].forEach((id) => $(id).addEventListener('input', scheduleTrace));
-$('wzResetOpts').onclick = () => { const dv = { oSens: 70, oBlur: 1, oTol: 1.2, oNoise: 5, oBright: 0, oContrast: 0, oSharp: 0 }; Object.keys(dv).forEach((k) => $(k).value = dv[k]); $('oInvert').checked = false; scheduleTrace(); };
-
-function renderFinal() {
-  const sv = $('wzFinal'), v = TR.res.vb;
-  sv.setAttribute('viewBox', v.join(' ')); sv.style.height = '100%'; sv.style.aspectRatio = v[2] + '/' + v[3];
-  sv.innerHTML = `<path d="${TR.res.d}" fill="#000" fill-rule="evenodd"/>`;
-  if (!$('wzName').value) $('wzName').value = 'Bild-Design ' + (S.lib.length + 1);
-}
-function finishWizard(place) {
-  const name = ($('wzName').value || '').trim() || 'Bild-Design';
-  const lib = { id: newId('l'), name, vb: TR.res.vb, inner: `<path d="${TR.res.d}" fill="#000" fill-rule="evenodd"/>` };
-  S.lib.push(lib); renderLibrary(); save();
-  wdlg.close(); $('wzName').value = '';
-  if (place) addItem(lib.id, S.W / 2, S.H / 2);
-  toast('„' + name + '“ zur Bibliothek hinzugefügt.');
-}
-
-/* Bild beschaffen: Datei, Ziehen, Einfügen */
-$('wizBtn').onclick = openWizard;
-$('wzClose').onclick = () => wdlg.close();
-$('wzBack').onclick = () => wizStep(Math.max(1, TR.step - 1));
-$('wzNext').onclick = () => wizStep(Math.min(3, TR.step + 1));
-$('wzFile').onclick = () => $('wzFileInput').click();
-$('wzFileInput').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) loadBlob(f); });
-$('wzAdd').onclick = () => finishWizard(false);
-$('wzAddPlace').onclick = () => finishWizard(true);
-$('wzPaste').onclick = async () => {
-  try {
-    for (const it of await navigator.clipboard.read()) { const t = it.types.find((x) => x.startsWith('image/')); if (t) return loadBlob(await it.getType(t)); }
-    toast('In der Zwischenablage ist kein Bild.');
-  } catch (e) { toast('Bitte Strg+V drücken, um das Bild einzufügen.'); }
-};
-document.addEventListener('paste', (e) => {
-  const it = [...(e.clipboardData ? e.clipboardData.items : [])].find((i) => i.type.startsWith('image/'));
-  if (!it) return;
-  e.preventDefault(); loadBlob(it.getAsFile());
-});
-const wz = $('wzDrop');
-wz.addEventListener('dragover', (e) => { e.preventDefault(); wz.classList.add('over'); });
-wz.addEventListener('dragleave', () => wz.classList.remove('over'));
-wz.addEventListener('drop', (e) => { e.preventDefault(); wz.classList.remove('over'); const f = [...e.dataTransfer.files].find((x) => x.type.startsWith('image/')); if (f) loadBlob(f); });
-window.__wiz = { loadBlob, TR };
-
-/* ---------- Programmversion & Updates (nur in der Windows-App) ---------- */
-if (window.vd) {
-  window.vd.info().then((i) => {
-    $('updBox').hidden = false; $('verTxt').textContent = i.version;
-    if (!i.updates) { $('updBtn').disabled = true; $('updHint').textContent = i.portable ? 'Die portable Version aktualisiert sich nicht automatisch. Bitte die Setup-Version installieren.' : 'Updates gibt es nur in der installierten Version.'; }
-  });
-  $('updBtn').onclick = () => { window.vd.checkUpdates(); toast('Suche nach Updates …'); };
-}
-
-/* ---------- Start ---------- */
-load();
-renderLibrary();
-fit();
-})();
-</script>
+<script src="vendor/opentype.min.js"></script>
+<script src="fonts.js"></script>
+<script src="app.js"></script>
+<script src="text.js"></script>
+<script src="wizard.js"></script>
 </body>
 </html>
