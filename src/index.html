@@ -104,6 +104,17 @@
   #activeInfo span { color: var(--muted); }
   #library { grid-template-columns: repeat(2, 1fr); }
   .card svg { height: 64px; }
+  [hidden] { display: none !important; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .grpInfo { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 6px 8px; background: var(--bg); border-radius: 8px; font-size: 12px; }
+  #groupList { display: grid; gap: 4px; }
+  .grow { display: flex; align-items: center; gap: 7px; padding: 5px 6px 5px 8px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: #fff; }
+  .grow:hover { border-color: var(--accent); }
+  .grow.on { background: var(--accent-soft); border-color: var(--accent); }
+  .grow .gn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grow .cnt { color: var(--muted); font-size: 11px; }
+  .grow button { border: 0; background: none; padding: 0 4px; color: var(--muted); }
+  .grow button:hover { color: var(--accent); }
   #textDlg { width: 420px; }
   #textPrev { width: 100%; height: 110px; border: 1px solid var(--line); border-radius: 8px; background: #fff; margin: 10px 0; }
   #textDlg textarea { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; }
@@ -194,6 +205,7 @@
       <div class="field"><label>Drehung (°)</label><input type="number" id="pR" step="1"></div>
       <label class="check"><input type="checkbox" id="pLock" checked> Seitenverhältnis halten</label>
 
+      <div id="grpInfo" class="grpInfo" hidden></div>
       <div class="sect">Darstellung</div>
       <div class="seg" id="modeSeg">
         <button data-mode="fill" title="Gefüllte Fläche – wird vom Laser graviert">Gefüllt (Gravur)</button>
@@ -205,7 +217,8 @@
         <div class="field"><label>Offset (mm)</label><input type="number" id="pOff" step="0.5" value="0"></div>
         <div class="field"><label>Anzahl Ringe</label><input type="number" id="pOffN" min="1" max="20" step="1" value="1"></div>
         <label class="check" style="margin:6px 0"><input type="checkbox" id="pOffKeep" checked> Original-Umriss behalten</label>
-        <div class="hint" style="margin:0 0 4px">+ = nach außen, − = nach innen. 0 = kein Versatz.</div>
+        <div class="hint" style="margin:0 0 6px">+ = nach außen, − = nach innen. 0 = kein Versatz.</div>
+        <button id="splitBtn" style="width:100%" title="Jeder Ring wird ein eigenes Teil, das du einzeln verschieben, drehen oder löschen kannst">In einzelne Teile aufteilen</button>
       </div>
 
       <div class="sect">Farbe (zur Orientierung)</div>
@@ -230,6 +243,8 @@
         <button id="ungrpBtn" title="Strg+Umschalt+G">Gruppe lösen</button>
       </div>
     </div>
+    <div class="sect" id="groupHead" hidden>Gruppen auf der Arbeitsfläche</div>
+    <div id="groupList"></div>
   </aside>
 </main>
 

@@ -183,7 +183,7 @@
     });
   }
 
-  function compute(lib, wMm, hMm, offMm, n) {
+  function compute(lib, wMm, hMm, offMm, n, withZero) {
     return new Promise(function (resolve, reject) {
       try {
         wMm = +wMm; hMm = +hMm; offMm = +offMm;
@@ -218,7 +218,7 @@
 
           var kx = vb[2] / wMm, ky = vb[3] / hMm;
           var parts = [];
-          for (var k = 1; k <= n; k++) {
+          for (var k = withZero ? 0 : 1; k <= n; k++) {
             var L = k * offMm * scale;
             var loops = contours(sd, W, H, L);
             for (var li = 0; li < loops.length; li++) {

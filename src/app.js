@@ -42,7 +42,7 @@ const S = {
   sel: [],
   zoom: 3,                  // Pixel pro mm
   grid: false, snap: true, gridSize: 5, exportColors: false,
-  folders: [], hiddenKeys: [],
+  folders: [], hiddenKeys: [], groupNames: {},
   filterCat: '', search: '',
 };
 let undoStack = [];
@@ -53,10 +53,10 @@ const round = (v) => Math.round(v * 100) / 100;
 const rad = (d) => d * Math.PI / 180;
 const numf = (n) => +n.toFixed(5);
 
-const normItem = (i) => ({ rot: 0, fx: false, fy: false, mode: 'fill', gid: null, color: null, off: 0, offN: 1, offKeep: true, ...i });
+const normItem = (i) => ({ rot: 0, fx: false, fy: false, mode: 'fill', gid: null, color: null, off: 0, offN: 1, offKeep: true, sid: null, ...i });
 
 function save() {
-  try { localStorage.setItem(STORE, JSON.stringify({ maxW: S.maxW, maxH: S.maxH, W: S.W, H: S.H, lib: S.lib, items: S.items, grid: S.grid, snap: S.snap, gridSize: S.gridSize, exportColors: S.exportColors, folders: S.folders, hiddenKeys: S.hiddenKeys })); } catch (e) {}
+  try { localStorage.setItem(STORE, JSON.stringify({ maxW: S.maxW, maxH: S.maxH, W: S.W, H: S.H, lib: S.lib, items: S.items, grid: S.grid, snap: S.snap, gridSize: S.gridSize, exportColors: S.exportColors, folders: S.folders, hiddenKeys: S.hiddenKeys, groupNames: S.groupNames })); } catch (e) {}
 }
 function load() {
   try {
@@ -69,6 +69,8 @@ function load() {
       if (typeof d.exportColors === 'boolean') S.exportColors = d.exportColors;
       if (Array.isArray(d.folders)) S.folders = d.folders;
       if (Array.isArray(d.hiddenKeys)) S.hiddenKeys = d.hiddenKeys;
+      if (d.groupNames && typeof d.groupNames === 'object') S.groupNames = d.groupNames;
+      S.lib = S.lib.filter((l) => !l.hidden || S.items.some((i) => i.libId === l.id));   // verwaiste interne Teile aufräumen
       const builtin = new Set(DEFAULT_LIB.map((l) => l.name));
       S.lib.forEach((l) => { if (!l.cat) l.cat = builtin.has(l.name) && l.inner.includes('#') ? 'Formen' : 'Eigene'; });
       mergeDefaults();
@@ -97,7 +99,8 @@ function undo() {
   S.sel = S.sel.filter((id) => S.items.some((i) => i.id === id));
   render(); save();
 }
-function categories() { return [...new Set([...S.folders, ...S.lib.map((l) => l.cat).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'de')); }
+const visibleLib = () => S.lib.filter((l) => !l.hidden);
+function categories() { return [...new Set([...S.folders, ...visibleLib().map((l) => l.cat).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'de')); }
 
 /* IDs innerhalb eines Teils eindeutig machen (Verläufe etc.), damit Kopien sich nicht stören */
 function uniq(inner, prefix) {
@@ -214,6 +217,17 @@ function offEntry(it, l) {
 }
 async function ensureOffsets() { await Promise.all(S.items.filter(needsOffset).map((it) => { const l = libOf(it); return l ? offEntry(it, l).p : null; })); }
 
+/* ---------- Gruppen ---------- */
+const GCOLORS = ['#d9480f', '#0b7285', '#862e9c', '#5c940d', '#c2255c', '#1864ab', '#e67700', '#2b8a3e'];
+function nextGroupNo() { return Object.values(S.groupNames).reduce((m, n) => { const x = /^Gruppe (\d+)/.exec(n); return x ? Math.max(m, +x[1]) : m; }, 0) + 1; }
+function gname(gid) { if (!S.groupNames[gid]) S.groupNames[gid] = 'Gruppe ' + nextGroupNo(); return S.groupNames[gid]; }
+const gcolor = (gid) => GCOLORS[[...gid].reduce((a, c) => a + c.charCodeAt(0), 0) % GCOLORS.length];
+function groupsList() {
+  const m = new Map();
+  S.items.forEach((i) => { if (i.gid) { if (!m.has(i.gid)) m.set(i.gid, []); m.get(i.gid).push(i); } });
+  return [...m.entries()].filter(([, v]) => v.length >= 2).map(([gid, items]) => ({ gid, items, name: gname(gid), color: gcolor(gid) }));
+}
+
 /* ---------- Prüfungen: außerhalb, Überlappung ---------- */
 function polyOverlap(A, B, eps) {
   for (const P of [A, B]) {
@@ -233,6 +247,7 @@ function computeIssues() {
   const cut = S.items.filter((i) => i.mode === 'outline');
   for (let a = 0; a < cut.length; a++) for (let b = a + 1; b < cut.length; b++) {
     if (cut[a].gid && cut[a].gid === cut[b].gid) continue;
+    if (cut[a].sid && cut[a].sid === cut[b].sid) continue;   // Ringe desselben Teils (Offset) überschneiden sich nie
     if (polyOverlap(corners(cut[a]), corners(cut[b]), 0.05)) { over.add(cut[a].id); over.add(cut[b].id); pairs.push([cut[a].id, cut[b].id]); }
   }
   return { out, over: [...over], pairs: pairs.length };
@@ -299,15 +314,15 @@ function renderLibrary() {
     if (cat && count === 0) { const x = document.createElement('span'); x.className = 'fx'; x.textContent = '×'; x.title = 'Leeren Ordner löschen'; x.onclick = (e) => { e.stopPropagation(); S.folders = S.folders.filter((f) => f !== cat); if (S.filterCat === cat) S.filterCat = ''; renderLibrary(); save(); }; b.append(x); }
     fl.append(b);
   };
-  mk('Alle Ordner', '', S.lib.length);
-  cats.forEach((c) => mk(c, c, S.lib.filter((l) => l.cat === c).length));
+  mk('Alle Ordner', '', visibleLib().length);
+  cats.forEach((c) => mk(c, c, visibleLib().filter((l) => l.cat === c).length));
   $('renFolderBtn').disabled = !S.filterCat;
   $('activeInfo').innerHTML = S.filterCat
     ? `<b>Du arbeitest in:</b> 📂 ${esc(S.filterCat)}<br><span>Neue Teile (SVG-Import, Text, Bild) landen hier.</span>`
     : `<b>Alle Ordner</b> werden angezeigt.<br><span>Neue Teile landen im Ordner „Eigene“. Wähle einen Ordner, um darin zu arbeiten.</span>`;
   const q = S.search.trim().toLowerCase();
   const box = $('library'); box.innerHTML = '';
-  const list = S.lib.filter((l) => (!S.filterCat || l.cat === S.filterCat) && (!q || l.name.toLowerCase().includes(q) || (l.cat || '').toLowerCase().includes(q)));
+  const list = visibleLib().filter((l) => (!S.filterCat || l.cat === S.filterCat) && (!q || l.name.toLowerCase().includes(q) || (l.cat || '').toLowerCase().includes(q)));
   $('libHead').textContent = (S.filterCat ? S.filterCat : 'Alle Ordner') + ' · ' + list.length + ' Teil' + (list.length === 1 ? '' : 'e');
   if (!list.length) box.innerHTML = '<div class="hint" style="grid-column:1/-1">' + (S.lib.length ? 'Nichts gefunden.' : 'Die Bibliothek ist leer.') + '</div>';
   list.forEach((l) => {
@@ -342,11 +357,11 @@ $('leCancel').onclick = () => $('libDlg').close();
 $('libSearch').addEventListener('input', (e) => { S.search = e.target.value; renderLibrary(); });
 
 /* Ordner anlegen / umbenennen */
-let folderMode = 'new';
-function openFolderDlg(mode) {
-  folderMode = mode;
-  $('fdTitle').textContent = mode === 'new' ? 'Neuer Ordner' : 'Ordner umbenennen';
-  $('fdName').value = mode === 'new' ? '' : S.filterCat;
+let folderMode = 'new', folderGid = null;
+function openFolderDlg(mode, gid) {
+  folderMode = mode; folderGid = gid || null;
+  $('fdTitle').textContent = mode === 'new' ? 'Neuer Ordner' : mode === 'group' ? 'Gruppe umbenennen' : 'Ordner umbenennen';
+  $('fdName').value = mode === 'new' ? '' : mode === 'group' ? gname(gid) : S.filterCat;
   $('folderDlg').showModal(); $('fdName').focus();
 }
 $('newFolderBtn').onclick = () => openFolderDlg('new');
@@ -354,6 +369,7 @@ $('renFolderBtn').onclick = () => { if (S.filterCat) openFolderDlg('rename'); };
 $('fdCancel').onclick = () => $('folderDlg').close();
 $('fdSave').onclick = () => {
   const name = $('fdName').value.trim().slice(0, 30); if (!name) return;
+  if (folderMode === 'group') { S.groupNames[folderGid] = name; $('folderDlg').close(); render(); save(); return; }
   if (folderMode === 'new') { if (!S.folders.includes(name)) S.folders.push(name); S.filterCat = name; }
   else {
     const old = S.filterCat;
@@ -390,7 +406,7 @@ function render() {
   $('emptyHint').style.display = S.items.length ? 'none' : '';
   $('wsW').value = S.W; $('wsH').value = S.H;
   $('gridChk').checked = S.grid; $('snapChk').checked = S.snap;
-  renderProps(); renderStatus();
+  renderProps(); renderStatus(); renderGroups();
   $('undoBtn').disabled = !undoStack.length;
   document.querySelectorAll('[data-align]').forEach((b) => { const a = b.dataset.align, n = S.sel.length; b.disabled = a.startsWith('dist') ? n < 3 : n < 1; });
 }
@@ -404,6 +420,12 @@ function renderOverlay() {
   const iss = computeIssues();
   iss.out.forEach((id) => { const b = box(S.items.find((i) => i.id === id)); h += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="rgba(211,58,58,.08)" stroke="#d33a3a" stroke-width="${sw}" stroke-dasharray="${5*px} ${3*px}" style="pointer-events:none"/>`; });
   iss.over.forEach((id) => { const b = box(S.items.find((i) => i.id === id)); h += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="none" stroke="#f08c00" stroke-width="${sw}" stroke-dasharray="${2*px} ${3*px}" style="pointer-events:none"/>`; });
+  groupsList().forEach((g) => {
+    const b = bounds(g.items), pad = 3 * px, nm = esc(g.name), lw = (nm.length * 6.4 + 22) * px, lh = 15 * px;
+    const ly = b.y - pad - lh < 0 ? b.y - pad : b.y - pad - lh;
+    h += `<g style="pointer-events:none"><rect x="${b.x - pad}" y="${b.y - pad}" width="${b.w + 2 * pad}" height="${b.h + 2 * pad}" rx="${3 * px}" fill="none" stroke="${g.color}" stroke-width="${1.3 * px}" stroke-dasharray="${6 * px} ${3 * px}"/>`
+       + `<rect x="${b.x - pad}" y="${ly}" width="${lw}" height="${lh}" rx="${3 * px}" fill="${g.color}"/><text x="${b.x - pad + 6 * px}" y="${ly + 11 * px}" font-size="${10 * px}" fill="#fff" font-family="Segoe UI, sans-serif">⧉ ${nm}</text></g>`;
+  });
   const sel = selItems();
   if (sel.length) {
     h += '<g style="pointer-events:none">';
@@ -442,6 +464,23 @@ function renderStatus() {
   st.querySelectorAll('[data-sel]').forEach((b) => b.onclick = () => { S.sel = b.dataset.sel === 'out' ? computeIssues().out : computeIssues().over; render(); });
 }
 
+function renderGroups() {
+  const gs = groupsList(), box = $('groupList');
+  $('groupHead').hidden = !gs.length;
+  box.innerHTML = '';
+  gs.forEach((g) => {
+    const on = g.items.every((i) => S.sel.includes(i.id));
+    const row = document.createElement('div'); row.className = 'grow' + (on ? ' on' : '');
+    row.innerHTML = `<span class="dot" style="background:${g.color}"></span><span class="gn">${esc(g.name)}</span><span class="cnt">${g.items.length}</span>`;
+    row.title = 'Klicken: Gruppe auswählen';
+    row.onclick = () => { S.sel = g.items.map((i) => i.id); render(); };
+    const ed = document.createElement('button'); ed.textContent = '✎'; ed.title = 'Gruppe umbenennen';
+    ed.onclick = (e) => { e.stopPropagation(); openFolderDlg('group', g.gid); };
+    const un = document.createElement('button'); un.textContent = '⛓'; un.title = 'Gruppe lösen';
+    un.onclick = (e) => { e.stopPropagation(); snapshot(); g.items.forEach((i) => i.gid = null); render(); save(); };
+    row.append(ed, un); box.append(row);
+  });
+}
 function renderProps() {
   const sel = selItems();
   $('props').hidden = sel.length === 0; $('propsEmpty').hidden = sel.length !== 0;
@@ -455,10 +494,13 @@ function renderProps() {
   document.querySelectorAll('#modeSeg button').forEach((bt) => bt.classList.toggle('on', modes.size === 1 && modes.has(bt.dataset.mode)));
   const outl = sel.filter((i) => i.mode === 'outline');
   $('offBox').hidden = !outl.length;
-  if (outl.length) { $('pOff').value = outl[0].off || 0; $('pOffN').value = outl[0].offN || 1; $('pOffKeep').checked = outl[0].offKeep !== false; $('pOffN').disabled = !(outl[0].off); $('pOffKeep').disabled = !(outl[0].off); }
+  if (outl.length) { $('pOff').value = outl[0].off || 0; $('pOffN').value = outl[0].offN || 1; $('pOffKeep').checked = outl[0].offKeep !== false; $('pOffN').disabled = !(outl[0].off); $('pOffKeep').disabled = !(outl[0].off); $('splitBtn').disabled = !outl.some((i) => Math.abs(i.off || 0) >= 0.05); }
   const cols = new Set(sel.map((i) => i.color || ''));
   $('colIn').value = cols.size === 1 && sel[0].color ? sel[0].color : '#000000';
   document.querySelectorAll('#swatches button').forEach((bt) => bt.classList.toggle('on', cols.size === 1 && sel[0].color === bt.dataset.c));
+  const gi = sel.filter((i) => i.gid), gids = new Set(gi.map((i) => i.gid));
+  $('grpInfo').hidden = !gi.length;
+  if (gi.length) $('grpInfo').innerHTML = gids.size === 1 ? `<span class="dot" style="background:${gcolor([...gids][0])}"></span> Teil von <b>${esc(gname([...gids][0]))}</b>` : `Teile von ${gids.size} Gruppen`;
   $('grpBtn').disabled = sel.length < 2; $('ungrpBtn').disabled = !sel.some((i) => i.gid);
 }
 
@@ -630,6 +672,40 @@ function applyOffset() {
   render(); save();
 }
 ['pOff', 'pOffN', 'pOffKeep'].forEach((id) => $(id).addEventListener('change', applyOffset));
+async function splitRings() {
+  const targets = selItems().filter((i) => i.mode === 'outline' && Math.abs(i.off || 0) >= 0.05);
+  if (!targets.length || !window.VDOffset) return;
+  $('splitBtn').disabled = true;
+  try {
+    const made = [], removeIds = new Set();
+    for (const it of targets) {
+      const l = libOf(it); if (!l) continue;
+      const d = await window.VDOffset.compute(l, it.w, it.h, it.off, Math.max(1, it.offN || 1), it.offKeep !== false);
+      const loops = d.split('M').filter(Boolean).map((sp) => sp.replace('Z', '').split('L').map((t) => t.trim().split(' ').map(Number)));
+      if (!loops.length) continue;
+      if (loops.length > 200) { toast('Zu viele Ringe (' + loops.length + ') – bitte weniger Ringe wählen.'); continue; }
+      const M = itemMatrix(it, l), sid = newId('s');
+      loops.forEach((lp, k) => {
+        const pts = lp.map(([x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]]);
+        const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+        const x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(0.1, Math.max(...xs) - x0), h = Math.max(0.1, Math.max(...ys) - y0);
+        const path = 'M' + pts.map((p) => numf(p[0]) + ' ' + numf(p[1])).join('L') + 'Z';
+        const nl = { id: newId('l'), name: l.name + ' Ring ' + (k + 1), vb: [numf(x0), numf(y0), numf(w), numf(h)], inner: `<path d="${path}" fill="#000"/>`, cat: '', hidden: true };
+        S.lib.push(nl);
+        made.push(normItem({ id: newId('i'), libId: nl.id, x: numf(x0), y: numf(y0), w: numf(w), h: numf(h), mode: 'outline', color: it.color || null, sid }));
+      });
+      removeIds.add(it.id);
+    }
+    if (made.length) {
+      snapshot();
+      S.items = S.items.filter((i) => !removeIds.has(i.id)).concat(made);
+      S.sel = made.map((i) => i.id); render(); save();
+      toast(made.length + ' einzelne Teile erzeugt – mit Strg+G gruppierst du sie wieder.');
+    }
+  } catch (e) { toast('Aufteilen fehlgeschlagen.'); }
+  $('splitBtn').disabled = false; renderProps();
+}
+$('splitBtn').onclick = splitRings;
 function setColor(c) { if (!S.sel.length) return; snapshot(); selItems().forEach((i) => i.color = c); render(); save(); }
 const PALETTE = ['#e03131', '#f08c00', '#f5d90a', '#2f9e44', '#1c7ed6', '#7048e8', '#d6336c', '#868e96'];
 $('swatches').innerHTML = PALETTE.map((c) => `<button data-c="${c}" style="background:${c}" title="${c}"></button>`).join('') + '<button data-c="" class="none" title="Originalfarbe">✕</button>';
@@ -662,14 +738,14 @@ $('dupBtn').onclick = duplicate;
 function duplicate() {
   const sel = selItems(); if (!sel.length) return; snapshot();
   const gmap = {};
-  const copies = sel.map((i) => { let g = null; if (i.gid) g = gmap[i.gid] || (gmap[i.gid] = newId('g')); return { ...i, id: newId('i'), x: round(i.x + 5), y: round(i.y + 5), gid: g }; });
+  const copies = sel.map((i) => { let g = null; if (i.gid) { g = gmap[i.gid]; if (!g) { g = gmap[i.gid] = newId('g'); S.groupNames[g] = gname(i.gid) + ' Kopie'; } } return { ...i, id: newId('i'), x: round(i.x + 5), y: round(i.y + 5), gid: g }; });
   S.items.push(...copies); S.sel = copies.map((c) => c.id); render(); save();
 }
 $('delBtn').onclick = removeSel;
 function removeSel() { if (!S.sel.length) return; snapshot(); S.items = S.items.filter((i) => !S.sel.includes(i.id)); S.sel = []; render(); save(); }
 $('frontBtn').onclick = () => { snapshot(); const s = selItems(); S.items = [...S.items.filter((i) => !s.includes(i)), ...s]; render(); save(); };
 $('backBtn').onclick = () => { snapshot(); const s = selItems(); S.items = [...s, ...S.items.filter((i) => !s.includes(i))]; render(); save(); };
-function group() { const s = selItems(); if (s.length < 2) return; snapshot(); const g = newId('g'); s.forEach((i) => i.gid = g); render(); save(); toast('Gruppiert – die Teile bewegen sich jetzt gemeinsam.'); }
+function group() { const s = selItems(); if (s.length < 2) return; snapshot(); const g = newId('g'); s.forEach((i) => i.gid = g); gname(g); render(); save(); toast('Gruppiert – die Teile bewegen sich jetzt gemeinsam.'); }
 function ungroup() { const s = selItems(); if (!s.some((i) => i.gid)) return; snapshot(); s.forEach((i) => i.gid = null); render(); save(); }
 $('grpBtn').onclick = group; $('ungrpBtn').onclick = ungroup;
 
@@ -758,7 +834,7 @@ window.__buildSvg = buildSvg;
 /* ---------- Projekt speichern / öffnen ---------- */
 function saveProject() {
   const used = new Set(S.items.map((i) => i.libId));
-  download('design.vdrop', JSON.stringify({ vectordropProject: 1, W: S.W, H: S.H, items: S.items, lib: S.lib.filter((l) => used.has(l.id)) }), 'application/json');
+  download('design.vdrop', JSON.stringify({ vectordropProject: 1, W: S.W, H: S.H, items: S.items, groupNames: S.groupNames, lib: S.lib.filter((l) => used.has(l.id)) }), 'application/json');
   toast('Projekt gespeichert (design.vdrop).');
 }
 async function openProject(file) {
@@ -767,8 +843,9 @@ async function openProject(file) {
     if (!d.vectordropProject || !Array.isArray(d.items) || !Array.isArray(d.lib)) throw 0;
     snapshot();
     const known = new Set(S.lib.map((l) => l.id));
-    d.lib.forEach((l) => { if (!known.has(l.id) && l.inner && Array.isArray(l.vb) && l.vb.length === 4) S.lib.push({ id: l.id, name: l.name || 'Teil', vb: l.vb, inner: l.inner, cat: l.cat || 'Eigene' }); });
+    d.lib.forEach((l) => { if (!known.has(l.id) && l.inner && Array.isArray(l.vb) && l.vb.length === 4) S.lib.push({ id: l.id, name: l.name || 'Teil', vb: l.vb, inner: l.inner, cat: l.cat || 'Eigene', hidden: !!l.hidden }); });
     S.items = d.items.filter((i) => S.lib.some((l) => l.id === i.libId)).map(normItem);
+    if (d.groupNames && typeof d.groupNames === 'object') Object.assign(S.groupNames, d.groupNames);
     S.W = clamp(Math.round(d.W) || S.W, 10, S.maxW); S.H = clamp(Math.round(d.H) || S.H, 10, S.maxH);
     S.sel = []; renderLibrary(); fit(); save();
     toast(d.W > S.maxW || d.H > S.maxH ? 'Projekt geöffnet – Arbeitsfläche auf die erlaubte Maximalgröße verkleinert.' : 'Projekt geöffnet.');
@@ -779,7 +856,7 @@ $('openBtn').onclick = () => $('projInput').click();
 $('projInput').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) openProject(f); });
 
 /* ---------- Bibliothek als Datei teilen / SVGs laden ---------- */
-$('exportLibBtn').onclick = () => download('bibliothek.json', JSON.stringify({ vectordropLibrary: 1, lib: S.lib }, null, 1), 'application/json');
+$('exportLibBtn').onclick = () => download('bibliothek.json', JSON.stringify({ vectordropLibrary: 1, lib: visibleLib() }, null, 1), 'application/json');
 $('importLibBtn').onclick = () => $('libInput').click();
 $('libInput').addEventListener('change', async (e) => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
