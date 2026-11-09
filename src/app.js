@@ -25,7 +25,7 @@ const S = {
   items: [],                // {id,libId,x,y,w,h,rot,fx,fy,mode,gid}
   sel: [],
   zoom: 3,                  // Pixel pro mm
-  grid: false, snap: true, gridSize: 5,
+  grid: false, snap: true, gridSize: 5, exportColors: false,
   filterCat: '', search: '',
 };
 let undoStack = [];
@@ -36,10 +36,10 @@ const round = (v) => Math.round(v * 100) / 100;
 const rad = (d) => d * Math.PI / 180;
 const numf = (n) => +n.toFixed(5);
 
-const normItem = (i) => ({ rot: 0, fx: false, fy: false, mode: 'fill', gid: null, ...i });
+const normItem = (i) => ({ rot: 0, fx: false, fy: false, mode: 'fill', gid: null, color: null, ...i });
 
 function save() {
-  try { localStorage.setItem(STORE, JSON.stringify({ maxW: S.maxW, maxH: S.maxH, W: S.W, H: S.H, lib: S.lib, items: S.items, grid: S.grid, snap: S.snap, gridSize: S.gridSize })); } catch (e) {}
+  try { localStorage.setItem(STORE, JSON.stringify({ maxW: S.maxW, maxH: S.maxH, W: S.W, H: S.H, lib: S.lib, items: S.items, grid: S.grid, snap: S.snap, gridSize: S.gridSize, exportColors: S.exportColors })); } catch (e) {}
 }
 function load() {
   try {
@@ -49,6 +49,7 @@ function load() {
       if (typeof d.grid === 'boolean') S.grid = d.grid;
       if (typeof d.snap === 'boolean') S.snap = d.snap;
       if (d.gridSize > 0) S.gridSize = d.gridSize;
+      if (typeof d.exportColors === 'boolean') S.exportColors = d.exportColors;
       const builtin = new Set(DEFAULT_LIB.map((l) => l.name));
       S.lib.forEach((l) => { if (!l.cat) l.cat = builtin.has(l.name) && l.inner.includes('#') ? 'Formen' : 'Eigene'; });
       return;
@@ -112,34 +113,52 @@ function itemMatrix(it, l) {
 }
 const matStr = (m) => 'matrix(' + m.map(numf).join(' ') + ')';
 
-/* Inhalt eines Teils; im Modus „Umriss“ nur dünne rote Konturen (Schnittlinie) */
-const styledCache = new Map();
-function styledInner(l) {
-  if (styledCache.has(l.id)) return styledCache.get(l.id);
+/* Inhalt eines Teils: Original, eingefärbt, oder (Modus „Umriss“) nur dünne Konturen (Schnittlinie) */
+const styleCache = new Map();
+const SHAPES = 'path,rect,circle,ellipse,polygon,polyline,line';
+function stripPaint(el) {
+  const st = el.getAttribute('style');
+  if (!st) return;
+  const n = st.replace(/(^|;)\s*(fill|stroke)[a-z-]*\s*:[^;]*/gi, '$1').trim();
+  if (n) el.setAttribute('style', n); else el.removeAttribute('style');
+}
+function restyle(l, kind, color) {
+  const key = l.id + '|' + kind + '|' + color;
+  if (styleCache.has(key)) return styleCache.get(key);
   let out = l.inner;
   try {
     const doc = new DOMParser().parseFromString(`<svg xmlns="${NS}">${l.inner}</svg>`, 'image/svg+xml');
     if (!doc.querySelector('parsererror')) {
-      doc.documentElement.querySelectorAll('path,rect,circle,ellipse,polygon,polyline,line').forEach((el) => {
+      doc.documentElement.querySelectorAll(SHAPES).forEach((el) => {
         if (el.closest('defs,clipPath,mask,pattern,symbol,marker')) return;
-        el.setAttribute('fill', 'none'); el.setAttribute('stroke', CUT_COLOR); el.setAttribute('stroke-width', '__SW__');
-        el.setAttribute('stroke-linejoin', 'round'); el.removeAttribute('stroke-dasharray'); el.removeAttribute('stroke-opacity'); el.removeAttribute('fill-opacity');
-        const st = el.getAttribute('style');
-        if (st) { const n = st.replace(/(^|;)\s*(fill|stroke)[a-z-]*\s*:[^;]*/gi, '$1').trim(); if (n) el.setAttribute('style', n); else el.removeAttribute('style'); }
+        if (kind === 'outline') {
+          el.setAttribute('fill', 'none'); el.setAttribute('stroke', color); el.setAttribute('stroke-width', '__SW__');
+          el.setAttribute('stroke-linejoin', 'round'); el.removeAttribute('stroke-dasharray'); el.removeAttribute('stroke-opacity'); el.removeAttribute('fill-opacity');
+          stripPaint(el);
+        } else {   // einfärben: sichtbare Füllung und sichtbare Kontur erhalten die Farbe
+          const fillNone = /^none$/i.test(el.getAttribute('fill') || '') || /fill\s*:\s*none/i.test(el.getAttribute('style') || '');
+          const strokeOn = (el.getAttribute('stroke') && !/^none$/i.test(el.getAttribute('stroke'))) || /stroke\s*:\s*(?!none)/i.test(el.getAttribute('style') || '');
+          stripPaint(el);
+          if (!fillNone) el.setAttribute('fill', color);
+          if (strokeOn) el.setAttribute('stroke', color);
+        }
       });
       out = [...doc.documentElement.childNodes].map((n) => new XMLSerializer().serializeToString(n)).join('');
     }
   } catch (e) {}
-  styledCache.set(l.id, out);
+  if (styleCache.size > 400) styleCache.clear();
+  styleCache.set(key, out);
   return out;
 }
 function itemInner(it, l, forExport) {
-  let inner = it.mode === 'outline' ? styledInner(l) : l.inner;
+  const col = it.color && (!forExport || S.exportColors) ? it.color : null;
+  let inner;
   if (it.mode === 'outline') {
+    inner = restyle(l, 'outline', col || CUT_COLOR);
     const s = Math.sqrt(Math.abs((it.w / l.vb[2]) * (it.h / l.vb[3]))) || 1;
     const sw = forExport ? CUT_WIDTH : Math.max(CUT_WIDTH, 1.3 / S.zoom);
     inner = inner.split('__SW__').join(numf(sw / s));
-  }
+  } else inner = col ? restyle(l, 'tint', col) : l.inner;
   return uniq(inner, it.id + '_');
 }
 
@@ -332,6 +351,9 @@ function renderProps() {
   ['pW', 'pH', 'pLock', 'pR'].forEach((id) => $(id).disabled = !single);
   const modes = new Set(sel.map((i) => i.mode));
   document.querySelectorAll('#modeSeg button').forEach((bt) => bt.classList.toggle('on', modes.size === 1 && modes.has(bt.dataset.mode)));
+  const cols = new Set(sel.map((i) => i.color || ''));
+  $('colIn').value = cols.size === 1 && sel[0].color ? sel[0].color : '#000000';
+  document.querySelectorAll('#swatches button').forEach((bt) => bt.classList.toggle('on', cols.size === 1 && sel[0].color === bt.dataset.c));
   $('grpBtn').disabled = sel.length < 2; $('ungrpBtn').disabled = !sel.some((i) => i.gid);
 }
 
@@ -496,6 +518,11 @@ function applyProps(which) {
 document.querySelectorAll('#modeSeg button').forEach((bt) => bt.addEventListener('click', () => {
   if (!S.sel.length) return; snapshot(); selItems().forEach((i) => i.mode = bt.dataset.mode); render(); save();
 }));
+function setColor(c) { if (!S.sel.length) return; snapshot(); selItems().forEach((i) => i.color = c); render(); save(); }
+const PALETTE = ['#e03131', '#f08c00', '#f5d90a', '#2f9e44', '#1c7ed6', '#7048e8', '#d6336c', '#868e96'];
+$('swatches').innerHTML = PALETTE.map((c) => `<button data-c="${c}" style="background:${c}" title="${c}"></button>`).join('') + '<button data-c="" class="none" title="Originalfarbe">✕</button>';
+$('swatches').querySelectorAll('button').forEach((bt) => bt.addEventListener('click', () => setColor(bt.dataset.c || null)));
+$('colIn').addEventListener('change', (e) => setColor(e.target.value));
 function rotate90(dir) {
   const sel = selItems(); if (!sel.length) return; snapshot();
   const C = sel.length > 1 ? (() => { const b = bounds(sel); return { x: b.x + b.w / 2, y: b.y + b.h / 2 }; })() : center(sel[0]);
@@ -579,12 +606,12 @@ window.addEventListener('resize', fit);
 $('gridChk').onchange = (e) => { S.grid = e.target.checked; render(); save(); };
 $('snapChk').onchange = (e) => { S.snap = e.target.checked; save(); };
 
-$('settingsBtn').onclick = () => { $('sMaxW').value = S.maxW; $('sMaxH').value = S.maxH; $('sGrid').value = S.gridSize; $('settingsDlg').showModal(); };
+$('settingsBtn').onclick = () => { $('sMaxW').value = S.maxW; $('sMaxH').value = S.maxH; $('sGrid').value = S.gridSize; $('sColors').checked = S.exportColors; $('settingsDlg').showModal(); };
 $('sCancel').onclick = () => $('settingsDlg').close();
 $('sSave').onclick = () => {
   const w = parseInt($('sMaxW').value, 10), h = parseInt($('sMaxH').value, 10), g = parseFloat($('sGrid').value);
   if (!(w >= 10 && h >= 10) || !(g > 0)) { toast('Bitte gültige Werte eingeben (Fläche mindestens 10 mm).'); return; }
-  S.maxW = w; S.maxH = h; S.gridSize = g;
+  S.maxW = w; S.maxH = h; S.gridSize = g; S.exportColors = $('sColors').checked;
   S.W = Math.min(S.W, w); S.H = Math.min(S.H, h);
   $('settingsDlg').close(); fit(); save(); toast('Einstellungen gespeichert.');
 };

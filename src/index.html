@@ -88,6 +88,10 @@
   .card .ed:hover { color: var(--accent); }
   .card .cat { font-size: 10px; color: var(--muted); }
   #libTools { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 10px; }
+  #swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+  #swatches button { height: 22px; padding: 0; border-radius: 6px; border: 2px solid transparent; font-size: 11px; line-height: 1; }
+  #swatches button.none { background: #fff; color: var(--muted); border-color: var(--line); }
+  #swatches button.on { border-color: var(--text); }
   #textDlg { width: 420px; }
   #textPrev { width: 100%; height: 110px; border: 1px solid var(--line); border-radius: 8px; background: #fff; margin: 10px 0; }
   #textDlg textarea { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; }
@@ -178,6 +182,10 @@
         <button data-mode="outline" title="Nur die Kontur als dünne rote Linie – wird vom Laser geschnitten">Umriss (Schnitt)</button>
       </div>
 
+      <div class="sect">Farbe (zur Orientierung)</div>
+      <div id="swatches"></div>
+      <label class="check" style="margin:8px 0 0">Eigene Farbe <input type="color" id="colIn" value="#000000" style="margin-left:auto;width:44px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:#fff"></label>
+
       <div class="sect">Drehen &amp; Spiegeln</div>
       <div class="row4">
         <button id="rotL" title="90° links (Umschalt+R)">⟲</button>
@@ -205,6 +213,8 @@
   <div class="field"><label>Max. Breite (mm)</label><input type="number" id="sMaxW" min="10" step="10"></div>
   <div class="field"><label>Max. Höhe (mm)</label><input type="number" id="sMaxH" min="10" step="10"></div>
   <div class="field"><label>Rastergröße (mm)</label><input type="number" id="sGrid" min="0.5" step="0.5"></div>
+  <label class="check" style="margin:10px 0 0;color:var(--text)"><input type="checkbox" id="sColors"> Farben im Export übernehmen</label>
+  <div class="hint" style="margin:2px 0 0">Aus (empfohlen für Laser und 3D-Druck): Farben dienen nur der Ansicht, der Export bleibt schwarz bzw. rot für Schnitt.</div>
   <div id="updBox" hidden style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)">
     <div class="field" style="grid-template-columns:1fr auto"><label>Version <b id="verTxt"></b></label><button id="updBtn">Nach Updates suchen</button></div>
     <div class="hint" id="updHint" style="margin:0">Updates werden automatisch beim Start gesucht.</div>
