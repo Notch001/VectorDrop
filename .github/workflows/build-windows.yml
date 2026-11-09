@@ -13,12 +13,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: electron-${{ hashFiles('package-lock.json') }}
       - name: Abhängigkeiten installieren (mit Wiederholung)
         shell: bash
-        run: for i in 1 2 3 4; do npm ci && break || { echo "Versuch $i fehlgeschlagen"; sleep 30; }; done; test -d node_modules/electron/dist
+        run: for i in 1 2 3 4 5 6; do npm ci && break || { echo "Versuch $i fehlgeschlagen"; sleep 45; }; done; test -d node_modules/electron/dist
       - name: Windows-Programm bauen
         shell: bash
-        run: for i in 1 2 3 4; do npm run dist && break || { echo "Versuch $i fehlgeschlagen"; sleep 30; }; done; ls dist/*.exe
+        run: for i in 1 2 3 4 5 6; do npm run dist && break || { echo "Versuch $i fehlgeschlagen"; sleep 45; }; done; ls dist/*.exe
       - uses: actions/upload-artifact@v4
         with:
           name: VectorDrop-Windows
