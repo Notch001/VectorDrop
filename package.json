@@ -24,8 +24,8 @@
       ],
       "icon": "build/icon.ico"
     },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false },
-    "artifactName": "VectorDrop-${version}-${target}.${ext}"
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false, "artifactName": "VectorDrop-Setup-${version}.${ext}" },
+    "portable": { "artifactName": "VectorDrop-Portable-${version}.${ext}" }
   },
   "devDependencies": {
     "electron": "^33.2.0",
