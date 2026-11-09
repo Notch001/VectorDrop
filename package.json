@@ -1,0 +1,34 @@
+{
+  "name": "vectordrop",
+  "productName": "VectorDrop",
+  "version": "0.1.0",
+  "description": "Einfaches Tool zum Zusammenstellen von Vektorgrafiken aus einer SVG-Bibliothek",
+  "main": "main.js",
+  "author": "VectorDrop",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:zip": "electron-builder --win zip"
+  },
+  "build": {
+    "appId": "de.vectordrop.app",
+    "productName": "VectorDrop",
+    "files": ["main.js", "src/**/*", "package.json"],
+    "directories": { "output": "dist" },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false },
+    "artifactName": "VectorDrop-${version}-${target}.${ext}"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}
