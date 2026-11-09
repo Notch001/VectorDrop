@@ -1,7 +1,7 @@
 {
   "name": "vectordrop",
   "productName": "VectorDrop",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Einfaches Tool zum Zusammenstellen von Vektorgrafiken aus einer SVG-Bibliothek",
   "main": "main.js",
   "author": "VectorDrop",

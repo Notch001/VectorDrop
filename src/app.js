@@ -8,13 +8,29 @@ const CUT_COLOR = '#ff0000';      // Farbe für „Umriss (Schnitt)“
 const CUT_WIDTH = 0.1;            // Linienstärke im Export (mm)
 
 /* ---------- Standard-Bibliothek ---------- */
+const poly = (n, rot = -90) => Array.from({ length: n }, (_, k) => { const a = (rot + 360 * k / n) * Math.PI / 180; return (50 + 48 * Math.cos(a)).toFixed(1) + ',' + (50 + 48 * Math.sin(a)).toFixed(1); }).join(' ');
+const B = '#000';
 const DEFAULT_LIB = [
-  { name: 'Kreis',    vb: [0,0,100,100], inner: '<circle cx="50" cy="50" r="48" fill="#000"/>' },
-  { name: 'Quadrat',  vb: [0,0,100,100], inner: '<rect x="2" y="2" width="96" height="96" fill="#000"/>' },
-  { name: 'Dreieck',  vb: [0,0,100,100], inner: '<polygon points="50,3 98,97 2,97" fill="#000"/>' },
-  { name: 'Haus',     vb: [0,0,100,100], inner: '<path fill="#000" fill-rule="evenodd" d="M50 4 L97 46 L84 46 L84 96 L16 96 L16 46 L3 46 Z M42 96 L42 66 L58 66 L58 96 Z"/>' },
-  { name: 'Stern',    vb: [0,0,100,100], inner: '<polygon points="50,3 62,36 97,38 70,60 80,95 50,75 20,95 30,60 3,38 38,36" fill="#000"/>' },
-  { name: 'Herz',     vb: [0,0,100,100], inner: '<path d="M50 92 C8 60 2 34 20 18 C35 6 48 16 50 28 C52 16 65 6 80 18 C98 34 92 60 50 92Z" fill="#000"/>' },
+  { key: 'kreis',     name: 'Kreis',                vb: [0,0,100,100], inner: `<circle cx="50" cy="50" r="48" fill="${B}"/>` },
+  { key: 'ellipse',   name: 'Ellipse',              vb: [0,0,160,100], inner: `<ellipse cx="80" cy="50" rx="78" ry="48" fill="${B}"/>` },
+  { key: 'quadrat',   name: 'Quadrat',              vb: [0,0,100,100], inner: `<rect x="2" y="2" width="96" height="96" fill="${B}"/>` },
+  { key: 'rechteck',  name: 'Rechteck',             vb: [0,0,160,100], inner: `<rect x="2" y="2" width="156" height="96" fill="${B}"/>` },
+  { key: 'rundrect',  name: 'Rechteck abgerundet',  vb: [0,0,160,100], inner: `<rect x="2" y="2" width="156" height="96" rx="16" fill="${B}"/>` },
+  { key: 'ring',      name: 'Ring',                 vb: [0,0,100,100], inner: `<path fill="${B}" fill-rule="evenodd" d="M50 2 A48 48 0 1 1 49.99 2 Z M50 22 A28 28 0 1 0 50.01 22 Z"/>` },
+  { key: 'halbkreis', name: 'Halbkreis',            vb: [0,0,100,50],  inner: `<path d="M2 50 A48 48 0 0 1 98 50 Z" fill="${B}"/>` },
+  { key: 'viertel',   name: 'Viertelkreis',         vb: [0,0,100,100], inner: `<path d="M2 98 L2 2 A96 96 0 0 1 98 98 Z" fill="${B}"/>` },
+  { key: 'dreieck',   name: 'Dreieck',              vb: [0,0,100,100], inner: `<polygon points="50,3 98,97 2,97" fill="${B}"/>` },
+  { key: 'rwdreieck', name: 'Rechtwinkliges Dreieck', vb: [0,0,100,100], inner: `<polygon points="2,98 98,98 2,2" fill="${B}"/>` },
+  { key: 'raute',     name: 'Raute',                vb: [0,0,100,100], inner: `<polygon points="50,2 98,50 50,98 2,50" fill="${B}"/>` },
+  { key: 'trapez',    name: 'Trapez',               vb: [0,0,160,100], inner: `<polygon points="32,2 128,2 158,98 2,98" fill="${B}"/>` },
+  { key: 'fuenfeck',  name: 'Fünfeck',              vb: [0,0,100,100], inner: `<polygon points="${poly(5)}" fill="${B}"/>` },
+  { key: 'sechseck',  name: 'Sechseck',             vb: [0,0,100,100], inner: `<polygon points="${poly(6, 0)}" fill="${B}"/>` },
+  { key: 'achteck',   name: 'Achteck',              vb: [0,0,100,100], inner: `<polygon points="${poly(8, -67.5)}" fill="${B}"/>` },
+  { key: 'pfeil',     name: 'Pfeil',                vb: [0,0,160,100], inner: `<polygon points="2,32 100,32 100,4 158,50 100,96 100,68 2,68" fill="${B}"/>` },
+  { key: 'kreuz',     name: 'Kreuz (Plus)',         vb: [0,0,100,100], inner: `<polygon points="35,2 65,2 65,35 98,35 98,65 65,65 65,98 35,98 35,65 2,65 2,35 35,35" fill="${B}"/>` },
+  { key: 'stern',     name: 'Stern',                vb: [0,0,100,100], inner: `<polygon points="50,3 62,36 97,38 70,60 80,95 50,75 20,95 30,60 3,38 38,36" fill="${B}"/>` },
+  { key: 'herz',      name: 'Herz',                 vb: [0,0,100,100], inner: `<path d="M50 92 C8 60 2 34 20 18 C35 6 48 16 50 28 C52 16 65 6 80 18 C98 34 92 60 50 92Z" fill="${B}"/>` },
+  { key: 'haus',      name: 'Haus',                 vb: [0,0,100,100], inner: `<path fill="${B}" fill-rule="evenodd" d="M50 4 L97 46 L84 46 L84 96 L16 96 L16 46 L3 46 Z M42 96 L42 66 L58 66 L58 96 Z"/>` },
 ];
 
 /* ---------- Zustand ---------- */
@@ -26,6 +42,7 @@ const S = {
   sel: [],
   zoom: 3,                  // Pixel pro mm
   grid: false, snap: true, gridSize: 5, exportColors: false,
+  folders: [], hiddenKeys: [],
   filterCat: '', search: '',
 };
 let undoStack = [];
@@ -36,10 +53,10 @@ const round = (v) => Math.round(v * 100) / 100;
 const rad = (d) => d * Math.PI / 180;
 const numf = (n) => +n.toFixed(5);
 
-const normItem = (i) => ({ rot: 0, fx: false, fy: false, mode: 'fill', gid: null, color: null, ...i });
+const normItem = (i) => ({ rot: 0, fx: false, fy: false, mode: 'fill', gid: null, color: null, off: 0, offN: 1, offKeep: true, ...i });
 
 function save() {
-  try { localStorage.setItem(STORE, JSON.stringify({ maxW: S.maxW, maxH: S.maxH, W: S.W, H: S.H, lib: S.lib, items: S.items, grid: S.grid, snap: S.snap, gridSize: S.gridSize, exportColors: S.exportColors })); } catch (e) {}
+  try { localStorage.setItem(STORE, JSON.stringify({ maxW: S.maxW, maxH: S.maxH, W: S.W, H: S.H, lib: S.lib, items: S.items, grid: S.grid, snap: S.snap, gridSize: S.gridSize, exportColors: S.exportColors, folders: S.folders, hiddenKeys: S.hiddenKeys })); } catch (e) {}
 }
 function load() {
   try {
@@ -50,12 +67,24 @@ function load() {
       if (typeof d.snap === 'boolean') S.snap = d.snap;
       if (d.gridSize > 0) S.gridSize = d.gridSize;
       if (typeof d.exportColors === 'boolean') S.exportColors = d.exportColors;
+      if (Array.isArray(d.folders)) S.folders = d.folders;
+      if (Array.isArray(d.hiddenKeys)) S.hiddenKeys = d.hiddenKeys;
       const builtin = new Set(DEFAULT_LIB.map((l) => l.name));
       S.lib.forEach((l) => { if (!l.cat) l.cat = builtin.has(l.name) && l.inner.includes('#') ? 'Formen' : 'Eigene'; });
+      mergeDefaults();
       return;
     }
   } catch (e) {}
   S.lib = DEFAULT_LIB.map((l) => ({ ...l, id: newId('l'), cat: 'Formen' }));
+}
+/* Neue Standardformen auch in bestehende Bibliotheken aufnehmen (außer vom Nutzer entfernte) */
+function mergeDefaults() {
+  const hidden = new Set(S.hiddenKeys);
+  DEFAULT_LIB.forEach((d) => {
+    const ex = S.lib.find((l) => l.key === d.key) || S.lib.find((l) => !l.key && l.cat === 'Formen' && l.name === d.name);
+    if (ex) { ex.key = d.key; return; }
+    if (!hidden.has(d.key)) S.lib.push({ ...d, id: newId('l'), cat: 'Formen' });
+  });
 }
 
 /* ---------- Hilfsfunktionen ---------- */
@@ -68,7 +97,7 @@ function undo() {
   S.sel = S.sel.filter((id) => S.items.some((i) => i.id === id));
   render(); save();
 }
-function categories() { return [...new Set(S.lib.map((l) => l.cat).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de')); }
+function categories() { return [...new Set([...S.folders, ...S.lib.map((l) => l.cat).filter(Boolean)])].sort((a, b) => a.localeCompare(b, 'de')); }
 
 /* IDs innerhalb eines Teils eindeutig machen (Verläufe etc.), damit Kopien sich nicht stören */
 function uniq(inner, prefix) {
@@ -154,13 +183,36 @@ function itemInner(it, l, forExport) {
   const col = it.color && (!forExport || S.exportColors) ? it.color : null;
   let inner;
   if (it.mode === 'outline') {
-    inner = restyle(l, 'outline', col || CUT_COLOR);
+    const cc = col || CUT_COLOR;
+    inner = restyle(l, 'outline', cc);
+    if (needsOffset(it)) {
+      const d = offEntry(it, l).d;
+      if (d) inner = (it.offKeep === false ? '' : inner) + `<path d="${d}" fill="none" stroke="${cc}" stroke-width="__SW__" stroke-linejoin="round"/>`;
+    }
     const s = Math.sqrt(Math.abs((it.w / l.vb[2]) * (it.h / l.vb[3]))) || 1;
     const sw = forExport ? CUT_WIDTH : Math.max(CUT_WIDTH, 1.3 / S.zoom);
     inner = inner.split('__SW__').join(numf(sw / s));
   } else inner = col ? restyle(l, 'tint', col) : l.inner;
   return uniq(inner, it.id + '_');
 }
+
+/* Konturversatz (Offset) für „Umriss“: Ringe um oder in einem Teil */
+const offCache = new Map();
+const needsOffset = (it) => it.mode === 'outline' && Math.abs(it.off || 0) >= 0.05 && window.VDOffset;
+function offEntry(it, l) {
+  const n = Math.max(1, Math.min(20, Math.round(it.offN || 1)));
+  const k = [l.id, it.w.toFixed(2), it.h.toFixed(2), it.off, n].join('|');
+  let e = offCache.get(k);
+  if (!e) {
+    if (offCache.size > 150) offCache.clear();
+    e = { d: null };
+    e.p = window.VDOffset.compute(l, it.w, it.h, it.off, n).then((d) => d || '').catch(() => '').then((d) => { e.d = d; return d; });
+    e.p.then(() => { if (offCache.get(k) === e) requestAnimationFrame(() => render()); });
+    offCache.set(k, e);
+  }
+  return e;
+}
+async function ensureOffsets() { await Promise.all(S.items.filter(needsOffset).map((it) => { const l = libOf(it); return l ? offEntry(it, l).p : null; })); }
 
 /* ---------- Prüfungen: außerhalb, Überlappung ---------- */
 function polyOverlap(A, B, eps) {
@@ -177,7 +229,7 @@ function polyOverlap(A, B, eps) {
 }
 function computeIssues() {
   const out = [], over = new Set(), pairs = [];
-  S.items.forEach((it) => { const b = box(it); if (b.x < -0.01 || b.y < -0.01 || b.x + b.w > S.W + 0.01 || b.y + b.h > S.H + 0.01) out.push(it.id); });
+  S.items.forEach((it) => { const b = box(it); const pad = needsOffset(it) && it.off > 0 ? it.off * Math.max(1, it.offN || 1) : 0; b.x -= pad; b.y -= pad; b.w += 2 * pad; b.h += 2 * pad; if (b.x < -0.01 || b.y < -0.01 || b.x + b.w > S.W + 0.01 || b.y + b.h > S.H + 0.01) out.push(it.id); });
   const cut = S.items.filter((i) => i.mode === 'outline');
   for (let a = 0; a < cut.length; a++) for (let b = a + 1; b < cut.length; b++) {
     if (cut[a].gid && cut[a].gid === cut[b].gid) continue;
@@ -205,43 +257,71 @@ function parseSvgText(text, fileName) {
     vb = [0, 0, w, h];
   }
   const inner = [...root.childNodes].map((n) => new XMLSerializer().serializeToString(n)).join('');
-  return { id: newId('l'), name: fileName.replace(/\.svg$/i, ''), vb, inner, cat: S.filterCat || 'Eigene' };
+  return { id: newId('l'), name: fileName.replace(/\.svg$/i, ''), vb, inner, cat: 'Eigene' };
 }
-async function importFiles(files) {
+let pendingFiles = [];
+function importFiles(files) {
+  files = files.filter((f) => /\.svg$/i.test(f.name) || f.type === 'image/svg+xml');
+  if (!files.length) { toast('Keine SVG-Dateien gefunden.'); return; }
+  pendingFiles = files;
+  $('impInfo').textContent = files.length === 1 ? '1 SVG-Datei: ' + files[0].name : files.length + ' SVG-Dateien ausgewählt';
+  $('impCat').value = S.filterCat || 'Eigene';
+  $('importDlg').showModal(); $('impCat').select();
+}
+$('impCancel').onclick = () => { pendingFiles = []; $('importDlg').close(); };
+$('impOk').onclick = async () => {
+  const cat = $('impCat').value.trim() || 'Eigene';
+  $('importDlg').close();
   let ok = 0;
-  for (const f of files) {
+  for (const f of pendingFiles) {
     const lib = parseSvgText(await f.text(), f.name);
-    if (lib) { S.lib.push(lib); ok++; } else toast('„' + f.name + '“ ist keine gültige SVG-Datei.');
+    if (lib) { lib.cat = cat; S.lib.push(lib); ok++; } else toast('„' + f.name + '“ ist keine gültige SVG-Datei.');
   }
-  if (ok) { renderLibrary(); save(); toast(ok + ' Teil(e) zur Bibliothek hinzugefügt.'); }
-}
+  pendingFiles = [];
+  if (ok) { S.filterCat = cat; renderLibrary(); save(); toast(ok + ' Teil(e) in den Ordner „' + cat + '“ geladen.'); }
+};
 function addLibEntry({ name, vb, inner, cat }) {
-  const lib = { id: newId('l'), name: name || 'Teil', vb, inner, cat: cat || 'Eigene' };
+  const lib = { id: newId('l'), name: name || 'Teil', vb, inner, cat: cat || S.filterCat || 'Eigene' };
   S.lib.push(lib); renderLibrary(); save(); return lib;
 }
 
 /* ---------- Bibliothek anzeigen ---------- */
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 function renderLibrary() {
   const cats = categories();
-  const sel = $('libCat'); const cur = S.filterCat;
-  sel.innerHTML = '<option value="">Alle Ordner</option>' + cats.map((c) => `<option>${c.replace(/</g, '&lt;')}</option>`).join('');
-  if (cats.includes(cur)) sel.value = cur; else S.filterCat = '';
-  $('catList').innerHTML = cats.map((c) => `<option value="${c.replace(/"/g, '&quot;')}">`).join('');
+  if (S.filterCat && !cats.includes(S.filterCat)) S.filterCat = '';
+  $('catList').innerHTML = cats.map((c) => `<option value="${esc(c)}">`).join('');
+  const fl = $('folderList'); fl.innerHTML = '';
+  const mk = (label, cat, count) => {
+    const b = document.createElement('button'); b.className = 'fold' + (S.filterCat === cat ? ' on' : '');
+    b.innerHTML = `<span class="ic">${cat ? (S.filterCat === cat ? '📂' : '📁') : '🗂'}</span><span class="fn">${esc(label)}</span><span class="cnt">${count}</span>`;
+    b.onclick = () => { S.filterCat = cat; renderLibrary(); };
+    if (cat && count === 0) { const x = document.createElement('span'); x.className = 'fx'; x.textContent = '×'; x.title = 'Leeren Ordner löschen'; x.onclick = (e) => { e.stopPropagation(); S.folders = S.folders.filter((f) => f !== cat); if (S.filterCat === cat) S.filterCat = ''; renderLibrary(); save(); }; b.append(x); }
+    fl.append(b);
+  };
+  mk('Alle Ordner', '', S.lib.length);
+  cats.forEach((c) => mk(c, c, S.lib.filter((l) => l.cat === c).length));
+  $('renFolderBtn').disabled = !S.filterCat;
+  $('activeInfo').innerHTML = S.filterCat
+    ? `<b>Du arbeitest in:</b> 📂 ${esc(S.filterCat)}<br><span>Neue Teile (SVG-Import, Text, Bild) landen hier.</span>`
+    : `<b>Alle Ordner</b> werden angezeigt.<br><span>Neue Teile landen im Ordner „Eigene“. Wähle einen Ordner, um darin zu arbeiten.</span>`;
   const q = S.search.trim().toLowerCase();
   const box = $('library'); box.innerHTML = '';
   const list = S.lib.filter((l) => (!S.filterCat || l.cat === S.filterCat) && (!q || l.name.toLowerCase().includes(q) || (l.cat || '').toLowerCase().includes(q)));
-  if (!list.length) box.innerHTML = '<div class="hint" style="grid-column:1/-1">Nichts gefunden.</div>';
+  $('libHead').textContent = (S.filterCat ? S.filterCat : 'Alle Ordner') + ' · ' + list.length + ' Teil' + (list.length === 1 ? '' : 'e');
+  if (!list.length) box.innerHTML = '<div class="hint" style="grid-column:1/-1">' + (S.lib.length ? 'Nichts gefunden.' : 'Die Bibliothek ist leer.') + '</div>';
   list.forEach((l) => {
     const c = document.createElement('div'); c.className = 'card'; c.draggable = true; c.title = l.name + (l.cat ? ' · ' + l.cat : '');
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('viewBox', l.vb.join(' ')); svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.innerHTML = uniq(l.inner, 'th' + l.id + '_');
     const n = document.createElement('div'); n.className = 'name'; n.textContent = l.name;
-    const k = document.createElement('div'); k.className = 'cat'; k.textContent = l.cat || '';
+    const k = document.createElement('div'); k.className = 'cat'; k.textContent = S.filterCat ? '' : (l.cat || '');
     const d = document.createElement('button'); d.className = 'del'; d.textContent = '×'; d.title = 'Aus Bibliothek entfernen';
     d.onclick = (e) => {
       e.stopPropagation();
       if (!confirm('„' + l.name + '“ aus der Bibliothek entfernen?\nBereits platzierte Exemplare auf der Arbeitsfläche werden ebenfalls entfernt.')) return;
+      if (l.key && !S.hiddenKeys.includes(l.key)) S.hiddenKeys.push(l.key);
       S.lib = S.lib.filter((x) => x.id !== l.id); S.items = S.items.filter((i) => i.libId !== l.id); S.sel = []; undoStack = [];
       renderLibrary(); render(); save();
     };
@@ -260,7 +340,29 @@ function editLib(l) {
 }
 $('leCancel').onclick = () => $('libDlg').close();
 $('libSearch').addEventListener('input', (e) => { S.search = e.target.value; renderLibrary(); });
-$('libCat').addEventListener('change', (e) => { S.filterCat = e.target.value; renderLibrary(); });
+
+/* Ordner anlegen / umbenennen */
+let folderMode = 'new';
+function openFolderDlg(mode) {
+  folderMode = mode;
+  $('fdTitle').textContent = mode === 'new' ? 'Neuer Ordner' : 'Ordner umbenennen';
+  $('fdName').value = mode === 'new' ? '' : S.filterCat;
+  $('folderDlg').showModal(); $('fdName').focus();
+}
+$('newFolderBtn').onclick = () => openFolderDlg('new');
+$('renFolderBtn').onclick = () => { if (S.filterCat) openFolderDlg('rename'); };
+$('fdCancel').onclick = () => $('folderDlg').close();
+$('fdSave').onclick = () => {
+  const name = $('fdName').value.trim().slice(0, 30); if (!name) return;
+  if (folderMode === 'new') { if (!S.folders.includes(name)) S.folders.push(name); S.filterCat = name; }
+  else {
+    const old = S.filterCat;
+    S.lib.forEach((l) => { if (l.cat === old) l.cat = name; });
+    S.folders = S.folders.map((f) => (f === old ? name : f)); S.filterCat = name;
+  }
+  $('folderDlg').close(); renderLibrary(); save();
+};
+$('fdName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('fdSave').click(); });
 
 /* ---------- Arbeitsfläche zeichnen ---------- */
 const cv = $('canvas');
@@ -351,6 +453,9 @@ function renderProps() {
   ['pW', 'pH', 'pLock', 'pR'].forEach((id) => $(id).disabled = !single);
   const modes = new Set(sel.map((i) => i.mode));
   document.querySelectorAll('#modeSeg button').forEach((bt) => bt.classList.toggle('on', modes.size === 1 && modes.has(bt.dataset.mode)));
+  const outl = sel.filter((i) => i.mode === 'outline');
+  $('offBox').hidden = !outl.length;
+  if (outl.length) { $('pOff').value = outl[0].off || 0; $('pOffN').value = outl[0].offN || 1; $('pOffKeep').checked = outl[0].offKeep !== false; $('pOffN').disabled = !(outl[0].off); $('pOffKeep').disabled = !(outl[0].off); }
   const cols = new Set(sel.map((i) => i.color || ''));
   $('colIn').value = cols.size === 1 && sel[0].color ? sel[0].color : '#000000';
   document.querySelectorAll('#swatches button').forEach((bt) => bt.classList.toggle('on', cols.size === 1 && sel[0].color === bt.dataset.c));
@@ -518,6 +623,13 @@ function applyProps(which) {
 document.querySelectorAll('#modeSeg button').forEach((bt) => bt.addEventListener('click', () => {
   if (!S.sel.length) return; snapshot(); selItems().forEach((i) => i.mode = bt.dataset.mode); render(); save();
 }));
+function applyOffset() {
+  const sel = selItems().filter((i) => i.mode === 'outline'); if (!sel.length) return; snapshot();
+  const off = parseFloat($('pOff').value), n = parseInt($('pOffN').value, 10);
+  sel.forEach((i) => { if (isFinite(off)) i.off = Math.max(-200, Math.min(200, off)); if (n >= 1) i.offN = Math.min(20, n); i.offKeep = $('pOffKeep').checked; });
+  render(); save();
+}
+['pOff', 'pOffN', 'pOffKeep'].forEach((id) => $(id).addEventListener('change', applyOffset));
 function setColor(c) { if (!S.sel.length) return; snapshot(); selItems().forEach((i) => i.color = c); render(); save(); }
 const PALETTE = ['#e03131', '#f08c00', '#f5d90a', '#2f9e44', '#1c7ed6', '#7048e8', '#d6336c', '#868e96'];
 $('swatches').innerHTML = PALETTE.map((c) => `<button data-c="${c}" style="background:${c}" title="${c}"></button>`).join('') + '<button data-c="" class="none" title="Originalfarbe">✕</button>';
@@ -632,12 +744,13 @@ function buildSvg() {
   const body = layer('Gravur', S.items.filter((i) => i.mode !== 'outline')) + layer('Schnitt', S.items.filter((i) => i.mode === 'outline'));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="${NS}" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${S.W}mm" height="${S.H}mm" viewBox="0 0 ${S.W} ${S.H}">\n${body}</svg>\n`;
 }
-$('exportBtn').onclick = () => {
+$('exportBtn').onclick = async () => {
   if (!S.items.length) { toast('Die Arbeitsfläche ist noch leer.'); return; }
   const iss = computeIssues(), warn = [];
   if (iss.out.length) warn.push(iss.out.length + ' Teil(e) ragen über die Arbeitsfläche hinaus (werden abgeschnitten).');
   if (iss.pairs) warn.push(iss.pairs + ' Überlappung(en) von Schnittlinien (würden doppelt geschnitten).');
   if (warn.length && !confirm('Achtung:\n\n' + warn.join('\n') + '\n\nTrotzdem exportieren?')) return;
+  try { await ensureOffsets(); } catch (e) {}
   download('design.svg', buildSvg(), 'image/svg+xml'); toast('design.svg exportiert.');
 };
 window.__buildSvg = buildSvg;
@@ -683,7 +796,7 @@ $('importBtn').onclick = () => $('fileInput').click();
 $('fileInput').addEventListener('change', (e) => { importFiles([...e.target.files]); e.target.value = ''; });
 const lp = $('libraryPanel');
 lp.addEventListener('dragover', (e) => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
-lp.addEventListener('drop', (e) => { if (e.dataTransfer.files.length) { e.preventDefault(); importFiles([...e.dataTransfer.files].filter((f) => /\.svg$/i.test(f.name))); } });
+lp.addEventListener('drop', (e) => { if (e.dataTransfer.files.length) { e.preventDefault(); importFiles([...e.dataTransfer.files]); } });
 
 /* ---------- Tastatur ---------- */
 $('undoBtn').onclick = undo;
@@ -717,7 +830,7 @@ if (window.vd) {
 }
 
 /* ---------- Schnittstelle für text.js und wizard.js ---------- */
-window.VD = { $, S, toast, clamp, round, newId, renderLibrary, save, addItem, addLibEntry, addItemRaw, categories, snapshot, selectIds, render: () => render(), fit };
+window.VD = { activeCat: () => S.filterCat || 'Eigene', $, S, toast, clamp, round, newId, renderLibrary, save, addItem, addLibEntry, addItemRaw, categories, snapshot, selectIds, render: () => render(), fit };
 
 /* ---------- Start ---------- */
 load();

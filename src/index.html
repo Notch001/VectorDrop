@@ -31,7 +31,7 @@
   input[type=number] { width: 70px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
   input[type=number]:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 
-  main { flex: 1; display: grid; grid-template-columns: 230px 1fr 220px; min-height: 0; }
+  main { flex: 1; display: grid; grid-template-columns: 320px 1fr 250px; min-height: 0; }
   aside { background: var(--panel); padding: 12px; overflow: auto; }
   #libraryPanel { border-right: 1px solid var(--line); }
   #propsPanel { border-left: 1px solid var(--line); }
@@ -87,11 +87,23 @@
   .card:hover .ed { display: block; }
   .card .ed:hover { color: var(--accent); }
   .card .cat { font-size: 10px; color: var(--muted); }
-  #libTools { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 10px; }
+  #libTools { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 4px; }
   #swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
   #swatches button { height: 22px; padding: 0; border-radius: 6px; border: 2px solid transparent; font-size: 11px; line-height: 1; }
   #swatches button.none { background: #fff; color: var(--muted); border-color: var(--line); }
   #swatches button.on { border-color: var(--text); }
+  #folderList { display: grid; gap: 3px; max-height: 210px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 4px; background: #fff; }
+  .fold { display: flex; align-items: center; gap: 8px; text-align: left; border: 0; border-radius: 7px; padding: 6px 8px; background: transparent; position: relative; }
+  .fold:hover:not(:disabled) { background: var(--accent-soft); }
+  .fold.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .fold .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fold .cnt { font-size: 11px; opacity: .75; }
+  .fold .fx { opacity: .6; padding: 0 4px; }
+  .fold .fx:hover { opacity: 1; color: var(--danger); }
+  #activeInfo { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--text); font-size: 12px; }
+  #activeInfo span { color: var(--muted); }
+  #library { grid-template-columns: repeat(2, 1fr); }
+  .card svg { height: 64px; }
   #textDlg { width: 420px; }
   #textPrev { width: 100%; height: 110px; border: 1px solid var(--line); border-radius: 8px; background: #fff; margin: 10px 0; }
   #textDlg textarea { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; }
@@ -143,16 +155,22 @@
 <main>
   <aside id="libraryPanel">
     <h2>Bibliothek</h2>
-    <input type="search" id="libSearch" placeholder="Suchen …">
-    <select id="libCat" style="margin-top:6px"></select>
     <div id="libTools">
       <button id="wizBtn" class="primary">🖼 Bild in Vektor umwandeln</button>
       <button id="textBtn">𝐓 Text einfügen</button>
       <button id="importBtn">+ SVG-Dateien laden</button>
-      <div class="row2"><button id="exportLibBtn">Bib. speichern</button><button id="importLibBtn">Bib. öffnen</button></div>
+      <div class="row2"><button id="exportLibBtn">Bibliothek speichern</button><button id="importLibBtn">Bibliothek öffnen</button></div>
     </div>
     <input type="file" id="fileInput" accept=".svg,image/svg+xml" multiple hidden>
     <input type="file" id="libInput" accept=".json,application/json" hidden>
+
+    <div class="sect">Ordner</div>
+    <div id="folderList"></div>
+    <div class="row2" style="margin-top:6px"><button id="newFolderBtn">+ Neuer Ordner</button><button id="renFolderBtn">Umbenennen</button></div>
+    <div id="activeInfo"></div>
+
+    <div class="sect" id="libHead">Teile</div>
+    <input type="search" id="libSearch" placeholder="Teile suchen …">
     <div class="hint">Teile auf die Arbeitsfläche ziehen – oder doppelklicken.</div>
     <div id="library"></div>
   </aside>
@@ -180,6 +198,14 @@
       <div class="seg" id="modeSeg">
         <button data-mode="fill" title="Gefüllte Fläche – wird vom Laser graviert">Gefüllt (Gravur)</button>
         <button data-mode="outline" title="Nur die Kontur als dünne rote Linie – wird vom Laser geschnitten">Umriss (Schnitt)</button>
+      </div>
+
+      <div id="offBox" hidden>
+        <div class="sect">Umriss-Versatz (Ringe)</div>
+        <div class="field"><label>Offset (mm)</label><input type="number" id="pOff" step="0.5" value="0"></div>
+        <div class="field"><label>Anzahl Ringe</label><input type="number" id="pOffN" min="1" max="20" step="1" value="1"></div>
+        <label class="check" style="margin:6px 0"><input type="checkbox" id="pOffKeep" checked> Original-Umriss behalten</label>
+        <div class="hint" style="margin:0 0 4px">+ = nach außen, − = nach innen. 0 = kein Versatz.</div>
       </div>
 
       <div class="sect">Farbe (zur Orientierung)</div>
@@ -236,6 +262,20 @@
   </div>
 </dialog>
 
+<dialog id="folderDlg">
+  <h3 id="fdTitle">Neuer Ordner</h3>
+  <div class="field" style="grid-template-columns:70px 1fr"><label>Name</label><input type="text" id="fdName" maxlength="30"></div>
+  <div class="buttons"><button id="fdCancel">Abbrechen</button><button class="primary" id="fdSave">Speichern</button></div>
+</dialog>
+
+<dialog id="importDlg">
+  <h3>SVG in die Bibliothek laden</h3>
+  <p id="impInfo"></p>
+  <div class="field" style="grid-template-columns:70px 1fr"><label>Ordner</label><input type="text" id="impCat" list="catList" maxlength="30" autocomplete="off"></div>
+  <div class="hint" style="margin:0">Wähle einen vorhandenen Ordner oder tippe einen neuen Namen – er wird dann angelegt.</div>
+  <div class="buttons"><button id="impCancel">Abbrechen</button><button class="primary" id="impOk">Laden</button></div>
+</dialog>
+
 <dialog id="textDlg">
   <h3>Text einfügen</h3>
   <p>Der Text wird in Vektorlinien umgewandelt und wie jedes andere Teil behandelt.</p>
@@ -251,6 +291,7 @@
 
 <script src="vendor/opentype.min.js"></script>
 <script src="fonts.js"></script>
+<script src="offset.js"></script>
 <script src="app.js"></script>
 <script src="text.js"></script>
 <script src="wizard.js"></script>

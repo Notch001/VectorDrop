@@ -473,7 +473,7 @@ function renderFinal() {
     ? 'Das Design wird als schwarze Strichzeichnung (Linien mit abgerundeten Enden) übernommen und lässt sich danach wie jedes andere Teil skalieren und ausrichten.'
     : 'Das Design wird einfarbig schwarz übernommen (gefüllte Fläche) und lässt sich danach wie jedes andere Teil skalieren und ausrichten.';
   $('wzCats').innerHTML = (categories() || []).map((c) => '<option value="' + String(c).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '"></option>').join('');
-  if (!$('wzCat').value.trim()) $('wzCat').value = 'Eigene';
+  if (!$('wzCat').value.trim() || $('wzCat').value === 'Eigene') $('wzCat').value = S.filterCat || 'Eigene';
   partNames(); syncSplit();
 }
 document.querySelectorAll('input[name=wzSplit]').forEach((el) => el.addEventListener('change', () => { syncSplit(); const hint = $('wzPartsHint'); hint.hidden = TR.res.parts.length <= MAX_PARTS || !splitEach(); }));

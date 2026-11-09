@@ -41,9 +41,9 @@ $('txtCancel').onclick = () => $('textDlg').close();
 $('txtAdd').onclick = () => {
   if (!current) return;
   const name = $('txtIn').value.trim().replace(/\s+/g, ' ').slice(0, 24);
-  const lib = addLibEntry({ name: '„' + name + '“', vb: current.vb, inner: `<path d="${current.d}" fill="#000"/>`, cat: 'Text' });
+  const lib = addLibEntry({ name: '„' + name + '“', vb: current.vb, inner: `<path d="${current.d}" fill="#000"/>`, cat: S.filterCat || 'Text' });
   $('textDlg').close();
   addItem(lib.id, S.W / 2, S.H / 2);
-  toast('Text eingefügt – du findest ihn auch im Ordner „Text“.');
+  toast('Text eingefügt – du findest ihn auch in der Bibliothek.');
 };
 })();
