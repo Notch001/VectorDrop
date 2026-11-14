@@ -3,8 +3,10 @@ const path = require('path');
 
 let win = null;
 let manualCheck = false;
-// Automatische Updates gibt es nur in der installierten Version (nicht portabel, nicht im Entwicklungsmodus)
-const updatesSupported = app.isPackaged && !process.env.PORTABLE_EXECUTABLE_FILE;
+// Automatische Updates gibt es nur in der installierten Version (nicht portabel, nicht im Entwicklungsmodus).
+// Unter Linux funktionieren sie nur mit dem AppImage (APPIMAGE ist dann gesetzt), nicht mit dem .deb-Paket.
+const isPortable = !!process.env.PORTABLE_EXECUTABLE_FILE;
+const updatesSupported = app.isPackaged && !isPortable && (process.platform !== 'linux' || !!process.env.APPIMAGE);
 let autoUpdater = null;
 
 function setupUpdater() {
@@ -47,7 +49,7 @@ function setupUpdater() {
   setInterval(check, 4 * 60 * 60 * 1000);  // danach alle 4 Stunden
 }
 
-ipcMain.handle('app-info', () => ({ version: app.getVersion(), updates: updatesSupported, portable: !!process.env.PORTABLE_EXECUTABLE_FILE }));
+ipcMain.handle('app-info', () => ({ version: app.getVersion(), updates: updatesSupported, portable: isPortable }));
 ipcMain.handle('check-updates', () => {
   if (!updatesSupported) return { supported: false };
   manualCheck = true;
