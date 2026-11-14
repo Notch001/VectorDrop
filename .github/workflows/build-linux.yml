@@ -1,0 +1,41 @@
+name: Linux-Build
+on:
+  push:
+    branches: [ccr-2756993b-4oxsdm]
+    paths-ignore: ['**.md']
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release veröffentlichen (Update für installierte Apps)'
+        type: boolean
+        default: false
+env:
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-linux-${{ hashFiles('package-lock.json') }}
+      - name: Abhängigkeiten installieren (mit Wiederholung)
+        run: for i in 1 2 3 4 5 6; do npm ci && break || { echo "Versuch $i fehlgeschlagen"; sleep 45; }; done; test -d node_modules/electron/dist
+      - name: Linux-Programm bauen (bei Tag v* wird ein Release veröffentlicht)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: for i in 1 2 3 4 5 6; do npm run dist:linux -- --publish ${{ (startsWith(github.ref, 'refs/tags/v') || inputs.release) && 'always' || 'never' }} && break || { echo "Versuch $i fehlgeschlagen"; sleep 45; }; done; ls dist/*.AppImage dist/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VectorDrop-Linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb

@@ -10,7 +10,8 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win",
-    "dist:zip": "electron-builder --win zip"
+    "dist:zip": "electron-builder --win zip",
+    "dist:linux": "electron-builder --linux"
   },
   "build": {
     "appId": "de.vectordrop.app",
@@ -40,6 +41,16 @@
         }
       ],
       "icon": "build/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icon.png",
+      "category": "Graphics",
+      "maintainer": "VectorDrop <noreply@vectordrop.invalid>",
+      "artifactName": "VectorDrop-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
